@@ -452,7 +452,7 @@ class _CommandScreenState extends State<CommandScreen> {
             margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: _DemoniTalkAppState.hellRed.withOpacity(0.3)),
+              side: BorderSide(color: _DemoniTalkAppState.hellRed.withValues(alpha: 0.3)),
             ),
             color: widget.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
             elevation: 4,
@@ -545,10 +545,10 @@ class _CommandScreenState extends State<CommandScreen> {
         decoration: BoxDecoration(
           color: color,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withOpacity(0.5), width: 2),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 2),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.4),
+              color: color.withValues(alpha: 0.4),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -590,8 +590,8 @@ class _CommandScreenState extends State<CommandScreen> {
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
           color: isRoot
-              ? _DemoniTalkAppState.brimstoneYellow.withOpacity(0.4)
-              : _DemoniTalkAppState.hellRed.withOpacity(0.4),
+              ? _DemoniTalkAppState.brimstoneYellow.withValues(alpha: 0.4)
+              : _DemoniTalkAppState.hellRed.withValues(alpha: 0.4),
         ),
       ),
       color: widget.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
@@ -844,6 +844,7 @@ class _CommandScreenState extends State<CommandScreen> {
 
   void _openSettingsDialog() async {
     final system = await NativeBridge.getSystemSettings();
+    if (!mounted) return;
     String currentMode = system['executionMode'] ?? 'HYBRID';
     final pathController = TextEditingController(text: system['exportPath'] ?? '');
 
@@ -904,6 +905,7 @@ class _CommandScreenState extends State<CommandScreen> {
                   executionMode: currentMode,
                   exportPath: pathController.text.trim(),
                 );
+                if (!ctx.mounted) return;
                 Navigator.pop(ctx);
                 _showSnackBar("Ajustes guardados correctamente 😈");
               },
@@ -930,7 +932,7 @@ class _CommandScreenState extends State<CommandScreen> {
               height: 180,
               width: double.maxFinite,
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: ListView.builder(
@@ -952,6 +954,7 @@ class _CommandScreenState extends State<CommandScreen> {
             onPressed: () async {
               await NativeBridge.clearCache();
               await _reloadCommands();
+              if (!ctx.mounted) return;
               Navigator.pop(ctx);
               _showSnackBar("¡Base de datos restablecida!");
             },
@@ -968,6 +971,7 @@ class _CommandScreenState extends State<CommandScreen> {
 
   void _openAiConfigDialog() async {
     final ai = await NativeBridge.getAiSettings();
+    if (!mounted) return;
     bool aiEnabled = ai['aiEnabled'] ?? true;
     final instructionsController = TextEditingController(text: ai['instructions'] ?? '');
     final memoryController = TextEditingController(text: ai['memory'] ?? '');
@@ -1026,6 +1030,7 @@ class _CommandScreenState extends State<CommandScreen> {
                   instructions: instructionsController.text.trim(),
                   memory: memoryController.text.trim(),
                 );
+                if (!ctx.mounted) return;
                 Navigator.pop(ctx);
                 _showSnackBar("Memoria IA guardada 😈");
               },

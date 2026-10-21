@@ -179,7 +179,8 @@ class VoskSpeechManager(
         speechService = null
     }
 
-    private fun parseJsonText(json: String, key: String): String {
+    private fun parseJsonText(json: String?, key: String): String {
+        if (json.isNullOrEmpty()) return ""
         return try {
             val jsonObj = gson.fromJson(json, JsonObject::class.java)
             jsonObj?.get(key)?.asString?.trim() ?: ""
