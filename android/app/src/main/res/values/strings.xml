@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DemoniTalk Pro</string>
+    <string name="accessibility_description">Permite a DemoniTalk Pro interactuar con otras aplicaciones para automatizar tareas por voz.</string>
+</resources>
