@@ -1,4 +1,4 @@
-name: Flutter
+name: Dart & Flutter Analysis
 
 on:
   push:
@@ -7,24 +7,28 @@ on:
     branches: [ "master" ]
 
 jobs:
-  build:
+  analyze:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Flutter
+      - name: Set up Flutter SDK
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.13.5'
           channel: 'stable'
+          cache: true
 
-      - name: Install dependencies
+      - name: Install Dart/Flutter dependencies
         run: flutter pub get
 
-      - name: Analyze project source
+      - name: Check code formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze Dart code
         run: flutter analyze
 
-      - name: Run tests
+      - name: Run Dart unit tests
         run: flutter test
