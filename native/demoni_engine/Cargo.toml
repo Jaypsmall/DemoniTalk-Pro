@@ -1,0 +1,15 @@
+[package]
+name = "demoni_engine"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "demoni_engine"
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+regex = "1.10"
+unicode-normalization = "0.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+jni = "0.21"
