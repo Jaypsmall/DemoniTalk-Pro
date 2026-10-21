@@ -1,8 +1,6 @@
 package com.jaylizapp.demonitalk_pro
 
 import android.util.Log
-import kotlin.jvm.Volatile
-import kotlin.jvm.JvmStatic
 
 object NativeEngine {
     private const val TAG = "NativeEngine"
@@ -12,10 +10,10 @@ object NativeEngine {
 
     init {
         try {
-            java.lang.System.loadLibrary("demoni_engine")
+            System.loadLibrary("demoni_engine")
             isLoaded = true
             Log.i(TAG, "⚡ Motor nativo Rust 'demoni_engine' cargado exitosamente")
-        } catch (e: java.lang.Throwable) {
+        } catch (e: Throwable) {
             isLoaded = false
             Log.w(TAG, "Motor nativo Rust no disponible (Fallback a Kotlin): ${e.message}")
         }
