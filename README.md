@@ -1,4 +1,4 @@
-# DemoniTalk Pro 😈
+# 😈 DemoniTalk Pro 😈
 
 ¡La versión más potente de **DemoniTalk** reconstruida con **Flutter**, **Kotlin** y **Rust Native Engine**!
 
