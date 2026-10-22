@@ -1,6 +1,4 @@
-# 😈 DemoniTalk Pro  ![Flutter](https://img.shields.io/badge/Flutter-181717?style=flat&logo=flutter&logoColor=FFD600)
-![Kotlin](https://img.shields.io/badge/Kotlin-181717?style=flat&logo=kotlin&logoColor=FFD600)
-![Rust](https://img.shields.io/badge/Rust-181717?style=flat&logo=rust&logoColor=FFD600)
+# 😈 DemoniTalk Pro  ![Flutter](https://img.shields.io/badge/Flutter-181717?style=flat&logo=flutter&logoColor=FFD600) ![Kotlin](https://img.shields.io/badge/Kotlin-181717?style=flat&logo=kotlin&logoColor=FFD600) ![Rust](https://img.shields.io/badge/Rust-181717?style=flat&logo=rust&logoColor=FFD600)
 
 ¡La versión más potente de **DemoniTalk** reconstruida con **Flutter**, **Kotlin** y **Rust Native Engine**!
 
