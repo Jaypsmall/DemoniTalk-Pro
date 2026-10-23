@@ -197,7 +197,7 @@ class NativeBridge {
       final Map raw = await platform.invokeMethod('getAiSettings');
       return Map<String, dynamic>.from(raw);
     } catch (_) {
-      return {'aiEnabled': true, 'instructions': '', 'memory': ''};
+      return {'aiEnabled': true, 'instructions': '', 'memory': '', 'groqApiKey': ''};
     }
   }
 
@@ -205,12 +205,14 @@ class NativeBridge {
     required bool aiEnabled,
     required String instructions,
     required String memory,
+    String groqApiKey = '',
   }) async {
     try {
       final bool result = await platform.invokeMethod('saveAiSettings', {
         'aiEnabled': aiEnabled,
         'instructions': instructions,
         'memory': memory,
+        'groqApiKey': groqApiKey,
       });
       return result;
     } catch (_) {
@@ -975,6 +977,7 @@ class _CommandScreenState extends State<CommandScreen> {
     bool aiEnabled = ai['aiEnabled'] ?? true;
     final instructionsController = TextEditingController(text: ai['instructions'] ?? '');
     final memoryController = TextEditingController(text: ai['memory'] ?? '');
+    final groqApiKeyController = TextEditingController(text: ai['groqApiKey'] ?? '');
 
     showDialog(
       context: context,
@@ -996,7 +999,26 @@ class _CommandScreenState extends State<CommandScreen> {
                   onChanged: (val) => setDialogState(() => aiEnabled = val),
                 ),
                 const SizedBox(height: 8),
-                const Text("MOTOR DE IA ACTIVO: IA Gratuita pública (Sin API key).", style: TextStyle(fontSize: 11, color: Colors.grey)),
+                Text(
+                  groqApiKeyController.text.trim().isNotEmpty
+                      ? "MOTOR IA: Groq Llama-3.3 70B (Súper rápido)"
+                      : "MOTOR IA: IA Gratuita pública (Sin API key)",
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: groqApiKeyController.text.trim().isNotEmpty ? _DemoniTalkAppState.demoniPurple : Colors.grey,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: groqApiKeyController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: "Groq API Key (Opcional)",
+                    hintText: "gsk_...",
+                  ),
+                  onChanged: (_) => setDialogState(() {}),
+                ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: instructionsController,
@@ -1029,10 +1051,11 @@ class _CommandScreenState extends State<CommandScreen> {
                   aiEnabled: aiEnabled,
                   instructions: instructionsController.text.trim(),
                   memory: memoryController.text.trim(),
+                  groqApiKey: groqApiKeyController.text.trim(),
                 );
                 if (!ctx.mounted) return;
                 Navigator.pop(ctx);
-                _showSnackBar("Memoria IA guardada 😈");
+                _showSnackBar("Configuración IA guardada 😈");
               },
               child: const Text("GUARDAR", style: TextStyle(color: _DemoniTalkAppState.demoniPurple, fontWeight: FontWeight.bold)),
             ),
