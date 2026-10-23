@@ -19,6 +19,7 @@ class CommandRepository(private val context: Context) {
     private val AI_INSTRUCTIONS_KEY = "ai_instructions"
     private val AI_MEMORY_KEY = "ai_memory"
     private val WAKE_RESPONSES_KEY = "wake_responses"
+    private val GROQ_API_KEY_KEY = "groq_api_key"
 
     fun saveWakeWordResponses(responses: List<String>) {
         prefs.edit { putString(WAKE_RESPONSES_KEY, gson.toJson(responses)) }
@@ -93,6 +94,14 @@ class CommandRepository(private val context: Context) {
 
     fun getAiMemory(): String {
         return prefs.getString(AI_MEMORY_KEY, "") ?: ""
+    }
+
+    fun saveGroqApiKey(apiKey: String) {
+        prefs.edit { putString(GROQ_API_KEY_KEY, apiKey) }
+    }
+
+    fun getGroqApiKey(): String {
+        return prefs.getString(GROQ_API_KEY_KEY, "") ?: ""
     }
 
     fun appendAiMemory(fact: String) {

@@ -2,6 +2,7 @@ pub mod normalizer;
 pub mod wake_word;
 pub mod fuzzy;
 pub mod command_processor;
+pub mod groq;
 
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
@@ -12,6 +13,7 @@ use jni::JNIEnv;
 
 use crate::command_processor::{process_command, VoiceCommand};
 use crate::fuzzy::is_fuzzy_match;
+use crate::groq::ask_groq;
 use crate::normalizer::normalize;
 use crate::wake_word::find_wake_word;
 
@@ -120,6 +122,33 @@ pub extern "system" fn Java_com_jaylizapp_demonitalk_1pro_NativeEngine_fuzzyMatc
     if is_fuzzy_match(&text_str, &trigger_str) { 1 } else { 0 }
 }
 
+#[no_mangle]
+pub extern "system" fn Java_com_jaylizapp_demonitalk_1pro_NativeEngine_askGroq(
+    mut env: JNIEnv,
+    _class: JClass,
+    prompt: JString,
+    api_key: JString,
+) -> jstring {
+    let prompt_str: String = match env.get_string(&prompt) {
+        Ok(s) => s.into(),
+        Err(_) => return env.new_string("").unwrap().into_raw(),
+    };
+
+    let api_key_str: String = match env.get_string(&api_key) {
+        Ok(s) => s.into(),
+        Err(_) => return env.new_string("").unwrap().into_raw(),
+    };
+
+    let response = match ask_groq(&prompt_str, &api_key_str) {
+        Ok(res) => res,
+        Err(_) => String::new(),
+    };
+
+    env.new_string(response)
+        .unwrap_or_else(|_| env.new_string("").unwrap())
+        .into_raw()
+}
+
 // ---------------------------------------------------------------------------
 // C FFI EXPORTS (FOR FLUTTER dart:ffi OR C INTEGRATION)
 // ---------------------------------------------------------------------------
@@ -185,6 +214,31 @@ pub unsafe extern "C" fn demoni_process_command(
     let res = process_command(text_str, &commands, require_wake_word);
     let out_json = serde_json::to_string(&res).unwrap_or_default();
     CString::new(out_json).unwrap_or_default().into_raw()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn demoni_ask_groq(
+    prompt: *const c_char,
+    api_key: *const c_char,
+) -> *mut c_char {
+    if prompt.is_null() || api_key.is_null() {
+        return CString::new("").unwrap().into_raw();
+    }
+    let p_str = match CStr::from_ptr(prompt).to_str() {
+        Ok(s) => s,
+        Err(_) => "",
+    };
+    let key_str = match CStr::from_ptr(api_key).to_str() {
+        Ok(s) => s,
+        Err(_) => "",
+    };
+
+    let response = match ask_groq(p_str, key_str) {
+        Ok(res) => res,
+        Err(e) => format!("Error Groq Rust: {}", e),
+    };
+
+    CString::new(response).unwrap_or_default().into_raw()
 }
 
 #[no_mangle]

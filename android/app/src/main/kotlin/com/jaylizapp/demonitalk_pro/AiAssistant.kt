@@ -21,7 +21,14 @@ class AiAssistant(context: Context) {
     fun askFreeAi(prompt: String): String {
         val finalPrompt = buildPrompt(prompt)
 
-        // 1. Petición POST dinámica a la IA LLM (OpenAI / Mistral)
+        // 0. Petición a Groq API si hay API key configurada (ultra rápido para voz)
+        val groqKey = repository.getGroqApiKey().trim()
+        if (groqKey.isNotEmpty()) {
+            val groqRes = fetchGroq(finalPrompt, groqKey)
+            if (groqRes != null && groqRes.trim().isNotEmpty()) return groqRes
+        }
+
+        // 1. Petición POST dinámica a la IA LLM (Pollinations)
         val resPost = fetchPollinationsPost(finalPrompt)
         if (resPost != null && resPost.trim().isNotEmpty()) return resPost
 
@@ -137,6 +144,71 @@ class AiAssistant(context: Context) {
             }
             null
         } catch (_: Exception) {
+            null
+        }
+    }
+
+    internal fun fetchGroq(prompt: String, apiKey: String): String? {
+        if (NativeEngine.isAvailable()) {
+            try {
+                val rustResponse = NativeEngine.askGroq(prompt, apiKey)
+                if (rustResponse.isNotEmpty()) {
+                    return cleanResponse(rustResponse)
+                }
+            } catch (e: Exception) {
+                Log.w("AiAssistant", "Fallback desde Rust a HTTP Kotlin: ${e.message}")
+            }
+        }
+
+        return try {
+            val url = URL("https://api.groq.com/openai/v1/chat/completions")
+            val connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "POST"
+            connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            connection.setRequestProperty("Authorization", "Bearer $apiKey")
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Mobile) DemoniTalkPro")
+            connection.connectTimeout = 5000
+            connection.readTimeout = 7000
+            connection.doOutput = true
+
+            val systemContent = "Eres Demoni, un asistente de voz conciso en español. Responde en una o dos frases muy cortas para ser leídas por voz. NUNCA uses emojis."
+            val gson = com.google.gson.Gson()
+            val escapedSystem = gson.toJson(systemContent)
+            val escapedUser = gson.toJson(prompt)
+
+            val jsonInputString = """
+                {
+                  "model": "llama-3.3-70b-versatile",
+                  "messages": [
+                    {"role": "system", "content": $escapedSystem},
+                    {"role": "user", "content": $escapedUser}
+                  ]
+                }
+            """.trimIndent()
+
+            connection.outputStream.use { os ->
+                val input = jsonInputString.toByteArray(charset("utf-8"))
+                os.write(input, 0, input.size)
+            }
+
+            if (connection.responseCode == 200) {
+                val responseText = connection.inputStream.bufferedReader(charset("utf-8")).use { it.readText() }.trim()
+                if (responseText.isNotEmpty()) {
+                    val jsonObj = com.google.gson.JsonParser.parseString(responseText).asJsonObject
+                    val choices = jsonObj.get("choices") as? com.google.gson.JsonArray
+                    if (choices != null && choices.size() > 0) {
+                        val element = choices.get(0)
+                        val messageObj = element.asJsonObject.getAsJsonObject("message")
+                        val content = messageObj.get("content")?.asString?.trim() ?: ""
+                        if (content.isNotEmpty()) return cleanResponse(content)
+                    }
+                }
+            } else {
+                Log.e("AiAssistant", "Error Groq API HTTP code: ${connection.responseCode}")
+            }
+            null
+        } catch (e: Exception) {
+            Log.e("AiAssistant", "Error en Groq API: ${e.message}")
             null
         }
     }

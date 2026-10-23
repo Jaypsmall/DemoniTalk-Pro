@@ -39,4 +39,7 @@ object NativeEngine {
 
     @JvmStatic
     external fun fuzzyMatch(text: String, trigger: String): Boolean
+
+    @JvmStatic
+    external fun askGroq(prompt: String, apiKey: String): String
 }

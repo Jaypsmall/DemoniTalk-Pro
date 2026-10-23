@@ -136,6 +136,7 @@ class MainActivity : FlutterActivity() {
                             "aiEnabled" to repository.isAiEnabled(),
                             "instructions" to repository.getAiInstructions(),
                             "memory" to repository.getAiMemory(),
+                            "groqApiKey" to repository.getGroqApiKey(),
                             "wakeResponses" to repository.getWakeWordResponses()
                         )
                     )
@@ -145,10 +146,12 @@ class MainActivity : FlutterActivity() {
                     val aiEnabled = call.argument<Boolean>("aiEnabled") ?: true
                     val instructions = call.argument<String>("instructions") ?: ""
                     val memory = call.argument<String>("memory") ?: ""
+                    val groqApiKey = call.argument<String>("groqApiKey") ?: ""
                     val rawWakeList = call.argument<List<Any>>("wakeResponses")
                     repository.saveAiEnabled(aiEnabled)
                     repository.saveAiInstructions(instructions)
                     repository.saveAiMemory(memory)
+                    repository.saveGroqApiKey(groqApiKey)
                     if (rawWakeList != null) {
                         val stringList = rawWakeList.map { x: Any -> x.toString() }
                         repository.saveWakeWordResponses(stringList)
