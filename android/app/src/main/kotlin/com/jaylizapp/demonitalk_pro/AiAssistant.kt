@@ -69,7 +69,7 @@ class AiAssistant(context: Context) {
             connection.readTimeout = 6000
             connection.doOutput = true
 
-            val systemContent = "Eres Demoni, un asistente de voz fluido en español. Responde directo y en máximo 2 frases cortas. NUNCA uses emojis."
+            val systemContent = "Eres Demoni, un asistente de voz fluido en español. Responde directo y de forma genuina y en máximo 2 frases cortas. NUNCA uses emojis."
             val gson = com.google.gson.Gson()
             val escapedSystem = gson.toJson(systemContent)
             val escapedUser = gson.toJson(prompt)
@@ -102,7 +102,7 @@ class AiAssistant(context: Context) {
 
     fun fetchPollinationsGet(prompt: String): String? {
         return try {
-            val systemPrompt = "Eres Demoni, un asistente de voz en español. Responde corto en máximo 2 frases. SIN EMOJIS."
+            val systemPrompt = "Eres Demoni, un asistente de voz en español. Responde corto de forma genuina en máximo 2 frases. SIN EMOJIS."
             val encodedPrompt = URLEncoder.encode(prompt, "UTF-8")
             val encodedSystem = URLEncoder.encode(systemPrompt, "UTF-8")
 
