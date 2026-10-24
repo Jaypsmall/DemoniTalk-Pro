@@ -44,7 +44,8 @@ class AccessibilityController(
         return try {
             when {
                 cleanAction.startsWith("type:") -> {
-                    val text = cleanAction.removePrefix("type:")
+                    val text = cleanAction.removePrefix("type:").trim()
+                    if (text.isEmpty()) return false
                     Log.d(TAG, "Escribiendo texto: $text")
                     service.typeText(text)
                 }

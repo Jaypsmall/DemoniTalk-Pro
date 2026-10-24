@@ -18,6 +18,7 @@ import android.speech.SpeechRecognizer
 import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
@@ -65,12 +66,15 @@ class DemoniAccessibilityService : AccessibilityService() {
         return super.onStartCommand(intent, flags, startId)
     }
 
+    private var preferOnDevice = true
+
     private fun startListening() {
         mainHandler.post {
             if (isListening) return@post
             try {
                 if (speechRecognizer == null) {
                     speechRecognizer = if (
+                        preferOnDevice &&
                         Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
                         SpeechRecognizer.isOnDeviceRecognitionAvailable(applicationContext)
                     ) {
@@ -108,14 +112,25 @@ class DemoniAccessibilityService : AccessibilityService() {
         override fun onRmsChanged(rmsdB: Float) {}
         override fun onBufferReceived(buffer: ByteArray?) {}
         override fun onEndOfSpeech() { isListening = false }
-        override fun onError(error: Int) { isListening = false }
+        override fun onError(error: Int) {
+            isListening = false
+            if (error == 12) {
+                preferOnDevice = false
+                try {
+                    speechRecognizer?.destroy()
+                } catch (_: Exception) {}
+                speechRecognizer = null
+            }
+        }
 
         override fun onResults(results: Bundle?) {
             isListening = false
             val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-            if (!matches.isNullOrEmpty()) {
-                val text = matches[0]
+            val text = matches?.firstOrNull { it.isNotBlank() }?.trim()
+            if (!text.isNullOrEmpty()) {
                 commandHandler.execute(text, repository.loadCommands())
+            } else {
+                Log.w(TAG, "Se ignoró un resultado de voz vacío.")
             }
         }
 
@@ -140,16 +155,67 @@ class DemoniAccessibilityService : AccessibilityService() {
     override fun onInterrupt() {}
 
     fun typeText(text: String): Boolean {
-        val rootNode = rootInActiveWindow ?: return false
-        val focusedNode = rootNode.findFocus(AccessibilityNodeInfo.FOCUS_INPUT) ?: return false
+        if (text.isBlank()) {
+            Log.w(TAG, "Se ignoró typeText porque el contenido está vacío.")
+            return false
+        }
 
-        val arguments = Bundle()
-        arguments.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
-        return focusedNode.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)
+        try {
+            val rootNode = rootInActiveWindow ?: return false
+            var targetNode = rootNode.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
+
+            if (targetNode == null) {
+                targetNode = findEditableNode(rootNode)
+            }
+
+            if (targetNode == null) {
+                Log.w(TAG, "No se encontró ningún campo de texto editable.")
+                return false
+            }
+
+            if (!targetNode.isFocused) {
+                targetNode.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
+                targetNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+            }
+
+            val arguments = Bundle()
+            arguments.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
+            val success = targetNode.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)
+            if (success) {
+                Log.d(TAG, "Texto ingresado exitosamente via accesibilidad: $text")
+            } else {
+                Log.w(TAG, "Falló ACTION_SET_TEXT via accesibilidad en el nodo.")
+            }
+            return success
+        } catch (e: Exception) {
+            Log.e(TAG, "Error en typeText: ${e.message}", e)
+            return false
+        }
+    }
+
+    private fun findEditableNode(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
+        try {
+            if (node.isEditable || node.className?.toString()?.contains("EditText", ignoreCase = true) == true) {
+                return node
+            }
+            for (i in 0 until node.childCount) {
+                val child = node.getChild(i) ?: continue
+                val editable = findEditableNode(child)
+                if (editable != null) return editable
+            }
+        } catch (_: Exception) {}
+        return null
     }
 
     fun clickSendButton(): Boolean {
         val rootNode = rootInActiveWindow ?: return false
+        val composer = findMessageComposer(rootNode)
+        val draft = composer?.text?.toString()?.trim().orEmpty()
+        if (draft.isEmpty()) {
+            Log.w(TAG, "No se pulsó Enviar: el campo de mensaje está vacío o no se encontró.")
+            return false
+        }
+
         val commonIds = listOf(
             "com.whatsapp:id/send",
             "com.google.android.apps.messaging:id/send_message_button_container"
@@ -167,6 +233,21 @@ class DemoniAccessibilityService : AccessibilityService() {
 
         val sendWords = listOf("enviar", "send", "mandar", "enviar mensaje", "post", "publicar")
         return findAndClickByTextOrDesc(rootNode, sendWords)
+    }
+
+    private fun findMessageComposer(rootNode: AccessibilityNodeInfo): AccessibilityNodeInfo? {
+        val composerIds = listOf(
+            "com.whatsapp:id/entry",
+            "com.google.android.apps.messaging:id/compose_message_text"
+        )
+
+        for (id in composerIds) {
+            val nodes = rootNode.findAccessibilityNodeInfosByViewId(id)
+            val composer = nodes.firstOrNull { it.isEditable } ?: nodes.firstOrNull()
+            if (composer != null) return composer
+        }
+
+        return findEditableNode(rootNode)
     }
 
     private fun findAndClickByTextOrDesc(node: AccessibilityNodeInfo, words: List<String>): Boolean {

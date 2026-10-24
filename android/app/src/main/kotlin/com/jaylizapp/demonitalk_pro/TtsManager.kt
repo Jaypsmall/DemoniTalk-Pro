@@ -85,15 +85,18 @@ class TtsManager(private val context: Context) {
     ) {
         tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onStart(id: String?) {
+                Log.i("TtsManager", "ReproducciÃ³n TTS iniciada")
                 mainHandler.post { onStartCallback?.invoke() }
             }
 
             override fun onDone(id: String?) {
+                Log.i("TtsManager", "ReproducciÃ³n TTS completada")
                 mainHandler.post { onDoneCallback?.invoke() }
             }
 
             @Deprecated("Deprecated in Java")
             override fun onError(id: String?) {
+                Log.e("TtsManager", "El motor TTS no pudo reproducir el texto")
                 mainHandler.post { onDoneCallback?.invoke() }
             }
         })
@@ -101,12 +104,15 @@ class TtsManager(private val context: Context) {
         try {
             val cleanStr = cleanTextForSpeech(textToSpeak)
             val finalStr = if (cleanStr.length > 0) cleanStr else textToSpeak
-            tts?.speak(
+            val status = tts?.speak(
                 finalStr,
                 TextToSpeech.QUEUE_FLUSH,
                 null,
                 "DemoniSpeech_${System.currentTimeMillis()}"
-            )
+            ) ?: TextToSpeech.ERROR
+            if (status != TextToSpeech.SUCCESS) {
+                Log.e("TtsManager", "TTS rechazÃ³ la solicitud de reproducciÃ³n (status=$status)")
+            }
         } catch (e: Exception) {
             Log.e("TtsManager", "Error ejecutando TTS: ${e.message}")
             onDoneCallback?.invoke()

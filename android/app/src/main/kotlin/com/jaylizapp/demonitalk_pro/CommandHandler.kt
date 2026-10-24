@@ -2,8 +2,6 @@ package com.jaylizapp.demonitalk_pro
 
 import android.content.Context
 import android.util.Log
-import com.google.gson.Gson
-import java.util.Locale
 import java.util.regex.Pattern
 import kotlin.math.abs
 
@@ -11,15 +9,6 @@ class CommandHandler(private val context: Context) {
 
     private var internalListener: ((String) -> Unit)? = null
     private val accessibilityController = AccessibilityController(context)
-    private val gson = Gson()
-
-    private data class RustProcessResult(
-        val status: String? = null,
-        val actions: List<String>? = null,
-        val wake_word_detected: Boolean? = null,
-        val detected_wake_word: String? = null
-    )
-
     fun setInternalListener(listener: (String) -> Unit) {
         internalListener = listener
     }
@@ -38,54 +27,12 @@ class CommandHandler(private val context: Context) {
         isPartial: Boolean = false
     ): CommandResult {
 
-        if (NativeEngine.isAvailable()) {
-            try {
-                val commandsJson = gson.toJson(commands)
-                val responseJson = NativeEngine.processCommand(text, commandsJson, requireWakeWord)
-                if (responseJson.isNotEmpty()) {
-                    val rustResult = gson.fromJson(responseJson, RustProcessResult::class.java)
-                    val status = rustResult?.status ?: "IGNORED"
-                    val actionsList = rustResult?.actions ?: emptyList()
-
-                    when (status) {
-                        "EXECUTIVE" -> {
-                            if (actionsList.isNotEmpty()) {
-                                if (actionsList.size == 1) {
-                                    val act = actionsList[0]
-                                    if (act.startsWith("internal_")) {
-                                        internalListener?.invoke(act)
-                                    } else {
-                                        executeAsync(act)
-                                    }
-                                } else {
-                                    Thread {
-                                        for (act in actionsList) {
-                                            if (act.startsWith("internal_")) {
-                                                internalListener?.invoke(act)
-                                            } else {
-                                                processAction(act)
-                                            }
-                                            try { Thread.sleep(1500) } catch (_: Exception) {}
-                                        }
-                                    }.start()
-                                }
-                                return CommandResult.Executed
-                            }
-                        }
-                        "WAKE_WORD_ONLY" -> return CommandResult.WakeWordOnly
-                        "IGNORED" -> {}
-                    }
-                }
-            } catch (e: Exception) {
-                Log.w("CommandHandler", "Error con Rust NativeEngine, fallback a Kotlin: ${e.message}")
-            }
-        }
-
-        // Fallback Kotlin Command Engine
+        // Keep speech command parsing in Kotlin. The Rust JNI path aborted the
+        // speech-result coroutine on some devices after Vosk returned a transcript.
         var normalizedText = text.normalize()
         var wakeWordDetected = false
 
-        Log.d("CommandHandler", "Texto original: '$text' -> normalizado: '$normalizedText'")
+        Log.i("CommandHandler", "Texto original: '$text' -> normalizado: '$normalizedText'")
 
         if (requireWakeWord) {
             val foundWakeWord = wakeWords.firstOrNull { wakeWord ->
@@ -96,6 +43,7 @@ class CommandHandler(private val context: Context) {
                 wakeWordDetected = true
                 normalizedText = normalizedText.removePrefix(foundWakeWord).trim()
             } else {
+                Log.w("CommandHandler", "Comando ignorado: falta la palabra de activación; se recibió '$normalizedText'")
                 return CommandResult.Ignored
             }
         }
@@ -132,7 +80,7 @@ class CommandHandler(private val context: Context) {
 
         if (normalizedText.isEmpty()) return false
 
-        Log.d("CommandHandler", "Ejecutando comando individual: '$normalizedText'")
+        Log.i("CommandHandler", "Ejecutando comando individual: '$normalizedText'")
 
         val isFirstChatPhrase = normalizedText.contains("primer chat") ||
                 normalizedText.contains("primera conversacion") ||
@@ -391,17 +339,20 @@ class CommandHandler(private val context: Context) {
 
     private fun executeSequence(parts: List<String>, commands: List<VoiceCommand>) {
         Thread {
-            for (part in parts) {
-                val cleanPart = part.trim().replace(Regex("^[*;,\\s]+"), "").trim()
-                if (cleanPart.isNotEmpty()) {
-                    executeSingleCommand(cleanPart, commands)
-                    try { Thread.sleep(1800) } catch (_: Exception) {}
+            val cleanParts = parts.map { it.trim().replace(Regex("^[*;,\\s]+"), "").trim() }
+                .filter { it.isNotEmpty() }
+            for ((index, cleanPart) in cleanParts.withIndex()) {
+                executeSingleCommand(cleanPart, commands)
+                if (index < cleanParts.lastIndex) {
+                    val delay = if (cleanPart.startsWith("open_app:") || cleanPart.startsWith("abre ")) 1000L else 350L
+                    try { Thread.sleep(delay) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
                 }
             }
         }.start()
     }
 
     private fun executeAsync(action: String) {
+        Log.i("CommandHandler", "Despachando acción de voz: '$action'")
         Thread {
             try {
                 processAction(action)
@@ -415,13 +366,17 @@ class CommandHandler(private val context: Context) {
         val cleanAction = action.trim()
         if (cleanAction.isEmpty()) return
 
+        Log.i("CommandHandler", "Procesando acción: '$cleanAction'")
+
         if ((cleanAction.contains(",") || cleanAction.contains(";")) && !cleanAction.startsWith("type:")) {
             val subActions = cleanAction.split(Regex("""[,;]""")).map { it.trim() }.filter { it.isNotEmpty() }
             if (subActions.size > 1) {
                 Thread {
-                    for (sub in subActions) {
+                    for ((index, sub) in subActions.withIndex()) {
                         processAction(sub)
-                        try { Thread.sleep(1500) } catch (_: Exception) {}
+                        if (index < subActions.lastIndex) {
+                            try { Thread.sleep(350) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
+                        }
                     }
                 }.start()
                 return
@@ -438,20 +393,47 @@ class CommandHandler(private val context: Context) {
 
         val allowRoot = (mode == "HYBRID" || mode == "ROOT")
         val allowAccessibility = (mode == "HYBRID" || mode == "ACCESSIBILITY")
+        val accessibilityOnlyAction = cleanAction.startsWith("open_app:") ||
+                cleanAction.startsWith("click_") ||
+                cleanAction in setOf("show_grid", "show_numbers", "hide_overlays", "click_send")
+
+        if (cleanAction.startsWith("type:")) {
+            val textToType = cleanAction.removePrefix("type:").trim()
+            if (textToType.isEmpty()) {
+                Log.w("CommandHandler", "Se ignoró una acción type: sin contenido")
+                return
+            }
+
+            var typedViaAccessibility = false
+            if (allowAccessibility) {
+                try {
+                    typedViaAccessibility = accessibilityController.execute(cleanAction)
+                } catch (e: Exception) {
+                    Log.e("CommandHandler", "Error ejecutando typing via accessibility: ${e.message}")
+                }
+            }
+
+            Log.i("CommandHandler", "Escritura por accesibilidad: $typedViaAccessibility")
+
+            if (!typedViaAccessibility && allowRoot && ShellUtils.isRootAvailable()) {
+                try {
+                    val escapedText = textToType.replace("\\", "\\\\").replace("\"", "\\\"").replace(" ", "%s")
+                    ShellUtils.executeCommand("input text \"$escapedText\"")
+                } catch (e: Exception) {
+                    Log.e("CommandHandler", "Error ejecutando typing via shell: ${e.message}")
+                }
+            }
+            return
+        }
 
         var shellSuccess = false
 
-        if (allowRoot && ShellUtils.isRootAvailable()) {
+        if (allowRoot && !accessibilityOnlyAction && ShellUtils.isRootAvailable()) {
             shellSuccess = try {
                 when {
                     cleanAction == "global_back" -> ShellUtils.executeCommand("input keyevent 4")
                     cleanAction == "global_home" -> ShellUtils.executeCommand("input keyevent 3")
                     cleanAction == "global_recents" -> ShellUtils.executeCommand("input keyevent 187")
-                    cleanAction.startsWith("type:") -> {
-                        val textToType = cleanAction.removePrefix("type:")
-                        val escapedText = textToType.replace("\\", "\\\\").replace("\"", "\\\"").replace(" ", "%s")
-                        ShellUtils.executeCommand("input text \"$escapedText\"")
-                    }
                     cleanAction.startsWith("open_app:") || cleanAction.startsWith("click_") || cleanAction == "show_grid" || cleanAction == "show_numbers" || cleanAction == "hide_overlays" || cleanAction == "click_send" -> false
                     else -> ShellUtils.executeCommand(cleanAction)
                 }
@@ -462,10 +444,13 @@ class CommandHandler(private val context: Context) {
 
         if (!shellSuccess && allowAccessibility) {
             try {
-                accessibilityController.execute(cleanAction)
+                val accessibilitySuccess = accessibilityController.execute(cleanAction)
+                Log.i("CommandHandler", "Acción '$cleanAction' por accesibilidad: $accessibilitySuccess")
             } catch (e: Exception) {
                 Log.e("CommandHandler", "Error ejecutando AccessibilityService: $cleanAction", e)
             }
+        } else if (!shellSuccess) {
+            Log.w("CommandHandler", "Acción '$cleanAction' sin ejecutarse: modo '$mode' no permite accesibilidad y root no respondió")
         }
     }
 

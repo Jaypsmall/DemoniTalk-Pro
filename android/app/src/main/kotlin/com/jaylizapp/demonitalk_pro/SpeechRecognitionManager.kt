@@ -104,6 +104,8 @@ class SpeechRecognitionManager(
         }
     }
 
+    private var preferOnDevice = true
+
     private fun setupSpeechRecognizer() {
         if (speechRecognizer != null) return
         if (!SpeechRecognizer.isRecognitionAvailable(context)) {
@@ -113,12 +115,14 @@ class SpeechRecognitionManager(
 
         try {
             speechRecognizer = if (
+                preferOnDevice &&
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
                 SpeechRecognizer.isOnDeviceRecognitionAvailable(context.applicationContext)
             ) {
                 Log.i("SpeechRecManager", "Usando reconocedor de voz local")
                 SpeechRecognizer.createOnDeviceSpeechRecognizer(context.applicationContext)
             } else {
+                Log.i("SpeechRecManager", "Usando reconocedor de voz estándar")
                 SpeechRecognizer.createSpeechRecognizer(context.applicationContext)
             }
             speechRecognizer?.setRecognitionListener(speechListener)
@@ -146,6 +150,7 @@ class SpeechRecognitionManager(
         @SuppressLint("SwitchIntDef")
         override fun onError(error: Int) {
             if (error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
+                Log.i("SpeechRecManager", "Tiempo de silencio o sin coincidencia (Error $error)")
                 isListening = false
                 if (isModeActive()) {
                     muteAudio(true)
@@ -180,6 +185,10 @@ class SpeechRecognitionManager(
                 muteAudio(true)
             } else {
                 muteAudio(false)
+            }
+
+            if (error == 12) {
+                preferOnDevice = false
             }
 
             if (error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY ||
@@ -221,18 +230,24 @@ class SpeechRecognitionManager(
             }
 
             val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-            if (!matches.isNullOrEmpty()) {
-                val text = matches[0]
+            val text = matches?.firstOrNull { it.isNotBlank() }?.trim()
+            if (!text.isNullOrEmpty()) {
+                Log.i("SpeechRecManager", "🎤 Texto reconocido: '$text'")
                 onSpeechResults(text)
             } else {
-                onErrorRestart()
+                Log.w("SpeechRecManager", "⚠️ Se recibió un resultado de voz vacío; no se enviará como comando")
+                if (isModeActive()) {
+                    onErrorRestart()
+                } else {
+                    onErrorStopWaiting()
+                }
             }
         }
 
         override fun onPartialResults(partialResults: Bundle?) {
             val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-            if (!matches.isNullOrEmpty()) {
-                val text = matches[0]
+            val text = matches?.firstOrNull { it.isNotBlank() }?.trim()
+            if (!text.isNullOrEmpty()) {
                 onPartialSpeechResults?.invoke(text)
             }
         }
@@ -265,9 +280,9 @@ class SpeechRecognitionManager(
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es")
                 putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
                 putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 10000L)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3500L)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 10000)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3500)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 3000)
                 putExtra("android.speech.extra.DICTATION_MODE", true)
             }
 

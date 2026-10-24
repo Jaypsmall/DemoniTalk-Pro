@@ -255,6 +255,18 @@ class NativeBridge {
       return false;
     }
   }
+
+  static Future<String?> pickJsonFile() async {
+    return platform.invokeMethod<String>('pickJsonFile');
+  }
+
+  static Future<bool> saveJsonFile(String content, String fileName) async {
+    final bool? saved = await platform.invokeMethod<bool>('saveJsonFile', {
+      'content': content,
+      'fileName': fileName,
+    });
+    return saved ?? false;
+  }
 }
 
 class CommandScreen extends StatefulWidget {
@@ -698,18 +710,18 @@ class _CommandScreenState extends State<CommandScreen> {
           ),
           _buildDrawerItem(
             icon: Icons.file_upload_outlined,
-            text: _isEnglish ? "Import Backup (JSON)" : "Importar Respaldo (JSON)",
+            text: _isEnglish ? "Import JSON file" : "Importar archivo JSON",
             onTap: () {
               Navigator.pop(context);
-              _openImportDialog();
+              _importJsonDocument();
             },
           ),
           _buildDrawerItem(
             icon: Icons.file_download_outlined,
-            text: _isEnglish ? "Export Backup (JSON)" : "Exportar Respaldo (JSON)",
+            text: _isEnglish ? "Export JSON file" : "Exportar archivo JSON",
             onTap: () {
               Navigator.pop(context);
-              _openExportDialog();
+              _exportJsonDocument();
             },
           ),
           _buildDrawerItem(
@@ -873,26 +885,32 @@ class _CommandScreenState extends State<CommandScreen> {
               ),
               const SizedBox(height: 16),
               const Text("MODO DE EJECUCIÓN DE COMANDOS:", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-              RadioListTile<String>(
-                dense: true,
-                title: const Text("Modo Demoníaco (Root + Accesibilidad)", style: TextStyle(fontSize: 12)),
-                value: "HYBRID",
+              RadioGroup<String>(
                 groupValue: currentMode,
-                onChanged: (val) => setDialogState(() => currentMode = val!),
-              ),
-              RadioListTile<String>(
-                dense: true,
-                title: const Text("Modo Root", style: TextStyle(fontSize: 12)),
-                value: "ROOT",
-                groupValue: currentMode,
-                onChanged: (val) => setDialogState(() => currentMode = val!),
-              ),
-              RadioListTile<String>(
-                dense: true,
-                title: const Text("Modo Accesibilidad", style: TextStyle(fontSize: 12)),
-                value: "ACCESSIBILITY",
-                groupValue: currentMode,
-                onChanged: (val) => setDialogState(() => currentMode = val!),
+                onChanged: (val) {
+                  if (val != null) {
+                    setDialogState(() => currentMode = val);
+                  }
+                },
+                child: Column(
+                  children: [
+                    RadioListTile<String>(
+                      dense: true,
+                      title: const Text("Modo Demoníaco (Root + Accesibilidad)", style: TextStyle(fontSize: 12)),
+                      value: "HYBRID",
+                    ),
+                    RadioListTile<String>(
+                      dense: true,
+                      title: const Text("Modo Root", style: TextStyle(fontSize: 12)),
+                      value: "ROOT",
+                    ),
+                    RadioListTile<String>(
+                      dense: true,
+                      title: const Text("Modo Accesibilidad", style: TextStyle(fontSize: 12)),
+                      value: "ACCESSIBILITY",
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -1098,6 +1116,63 @@ class _CommandScreenState extends State<CommandScreen> {
     );
   }
 
+  Future<void> _importJsonDocument() async {
+    try {
+      final jsonText = await NativeBridge.pickJsonFile();
+      if (jsonText == null) return;
+
+      final decoded = jsonDecode(jsonText);
+      final List<dynamic> entries;
+      if (decoded is List) {
+        entries = decoded;
+      } else if (decoded is Map && decoded['commands'] is List) {
+        entries = (decoded['commands'] as List).cast<dynamic>();
+      } else {
+        throw const FormatException('El archivo debe contener una lista JSON de comandos.');
+      }
+
+      final imported = <Map<String, dynamic>>[];
+      for (final entry in entries) {
+        if (entry is! Map) {
+          throw const FormatException('Hay un comando con formato no valido.');
+        }
+        final trigger = entry['trigger']?.toString().trim() ?? '';
+        final action = entry['action']?.toString().trim() ?? '';
+        if (trigger.isEmpty || action.isEmpty) {
+          throw const FormatException('Cada comando debe incluir trigger y action.');
+        }
+        imported.add({
+          'trigger': trigger,
+          'action': action,
+          'isRoot': entry['isRoot'] == true,
+        });
+      }
+
+      final saved = await NativeBridge.saveCommands(imported);
+      if (!saved) throw Exception('No se pudieron guardar los comandos.');
+      if (!mounted) return;
+      setState(() => _commands = imported);
+      _showSnackBar(_isEnglish
+          ? '${imported.length} commands imported from JSON.'
+          : '${imported.length} comandos importados desde el archivo JSON.');
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackBar(_isEnglish ? 'Could not import JSON: $e' : 'No se pudo importar el JSON: $e');
+    }
+  }
+
+  Future<void> _exportJsonDocument() async {
+    try {
+      final jsonText = const JsonEncoder.withIndent('  ').convert(_commands);
+      final saved = await NativeBridge.saveJsonFile(jsonText, 'demonitalk_backup.json');
+      if (!mounted || !saved) return;
+      _showSnackBar(_isEnglish ? 'JSON backup saved.' : 'Respaldo JSON guardado.');
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackBar(_isEnglish ? 'Could not save JSON: $e' : 'No se pudo guardar el JSON: $e');
+    }
+  }
+
   void _openImportDialog() {
     final importController = TextEditingController();
 
@@ -1133,9 +1208,13 @@ class _CommandScreenState extends State<CommandScreen> {
         actions: [
           TextButton(
             onPressed: () async {
-              final data = await Clipboard.getData(Clipboard.kTextPlain);
-              if (data?.text != null) {
-                importController.text = data!.text!;
+              try {
+                final data = await Clipboard.getData(Clipboard.kTextPlain);
+                if (data?.text != null) {
+                  importController.text = data!.text!;
+                }
+              } catch (e) {
+                debugPrint("Error al acceder al portapapeles: $e");
               }
             },
             child: Text(_isEnglish ? "PASTE CLIPBOARD" : "PEGAR DE PORTAPAPELES"),

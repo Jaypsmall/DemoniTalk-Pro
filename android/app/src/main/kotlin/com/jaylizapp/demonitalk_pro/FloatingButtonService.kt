@@ -21,7 +21,7 @@ import java.util.Locale
 class FloatingButtonService : Service() {
 
     private lateinit var uiManager: FloatingUiManager
-    private lateinit var speechManager: SpeechRecognitionManager
+    private lateinit var speechManager: VoskSpeechManager
     private lateinit var ttsManager: TtsManager
 
     private lateinit var commandHandler: CommandHandler
@@ -132,7 +132,7 @@ class FloatingButtonService : Service() {
             onQuadrupleTap = {
                 try {
                     val intent = Intent(this, MainActivity::class.java).apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
                     }
                     startActivity(intent)
                 } catch (e: Exception) {
@@ -145,7 +145,7 @@ class FloatingButtonService : Service() {
             }
         )
 
-        speechManager = SpeechRecognitionManager(
+        speechManager = VoskSpeechManager(
             context = this,
             onReady = { updateButtonUI() },
             onSpeechResults = { text -> handleSpeechResults(text) },
@@ -217,6 +217,7 @@ class FloatingButtonService : Service() {
     }
 
     private fun handleSpeechResults(text: String) {
+        Log.i("DemoniTalk", "🎤 Voz reconocida: '$text'")
         CoroutineScope(Dispatchers.Default).launch {
             val lowerText = text.lowercase(Locale.getDefault())
             val wasWaiting = isWaitingForCommandAfterWake
@@ -234,6 +235,7 @@ class FloatingButtonService : Service() {
                 Log.e("FloatingButtonService", "Error ejecutando comando: ${e.message}", e)
                 CommandHandler.CommandResult.Ignored
             }
+            Log.i("DemoniTalk", "Resultado del comando de voz: $result")
 
             withContext(Dispatchers.Main) {
                 if (wasWaiting) {
@@ -255,14 +257,29 @@ class FloatingButtonService : Service() {
                 }
 
                 if (result == CommandHandler.CommandResult.Ignored) {
-                    if (isVigilanceMode && !wasWaiting) {
+                    val requiresWakeWord = isVigilanceMode && !wasWaiting
+                    val wakeWordWasSpoken = VoiceTextNormalizer.findWakeWord(lowerText) != null
+                    if (requiresWakeWord && !wakeWordWasSpoken) {
+                        Log.d("DemoniTalk", "Pregunta ignorada en modo azul: no se detectó la palabra de activación")
                         scheduleListeningRestart(500)
                         return@withContext
                     }
 
                     val promptForAi = cleanPromptForAi(lowerText)
                     if (promptForAi.isNotEmpty() && aiAssistant.isAiAvailable()) {
+                        Log.i("DemoniTalk", "Pregunta reconocida; enviando a la IA")
                         processWithAiAndSpeak(promptForAi)
+                        return@withContext
+                    } else if (promptForAi.isNotEmpty()) {
+                        Log.w("DemoniTalk", "Pregunta no enviada: la IA está desactivada en ajustes")
+                        ttsManager.speakText("La IA esta desactivada.") {
+                            isWaitingForCommandAfterWake = false
+                            if (!isServiceDestroyed && (isContinuousMode || isVigilanceMode)) {
+                                scheduleListeningRestart(500)
+                            } else {
+                                updateButtonUI()
+                            }
+                        }
                         return@withContext
                     }
                 }
@@ -386,7 +403,13 @@ class FloatingButtonService : Service() {
 
             if (!aiReply.isNullOrBlank()) {
                 val cleanSpeech = ttsManager.cleanTextForSpeech(aiReply)
-                val finalSpeech = if (cleanSpeech.isNotEmpty()) cleanSpeech else "Entendido."
+                val finalSpeech = if (cleanSpeech.isNotEmpty()) {
+                    cleanSpeech
+                } else {
+                    Log.w("DemoniTalk", "La respuesta de IA quedó vacía al preparar el texto para TTS")
+                    "No recibí una respuesta válida de la IA. Repite la pregunta."
+                }
+                Log.i("DemoniTalk", "Respuesta de IA recibida; enviando texto al altavoz TTS")
 
                 withContext(Dispatchers.Main) {
                     if (!isServiceDestroyed) {

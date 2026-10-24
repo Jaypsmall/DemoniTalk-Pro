@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.provider.OpenableColumns
 import android.provider.Settings
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -16,7 +17,11 @@ class MainActivity : FlutterActivity() {
 
     private val CHANNEL = "com.jaylizapp.demonitalk_pro/channel"
     private val PERMISSION_REQUEST_CODE = 101
+    private val IMPORT_JSON_REQUEST_CODE = 102
+    private val EXPORT_JSON_REQUEST_CODE = 103
     private lateinit var repository: CommandRepository
+    private var pendingJsonResult: MethodChannel.Result? = null
+    private var pendingJsonExport: String? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -130,6 +135,14 @@ class MainActivity : FlutterActivity() {
                     result.success(true)
                 }
 
+                "pickJsonFile" -> pickJsonFile(result)
+
+                "saveJsonFile" -> {
+                    val content = call.argument<String>("content") ?: ""
+                    val fileName = call.argument<String>("fileName") ?: "demonitalk_backup.json"
+                    saveJsonFile(content, fileName, result)
+                }
+
                 "getAiSettings" -> {
                     result.success(
                         mapOf(
@@ -188,6 +201,86 @@ class MainActivity : FlutterActivity() {
                     result.notImplemented()
                 }
             }
+        }
+    }
+
+    private fun pickJsonFile(result: MethodChannel.Result) {
+        if (pendingJsonResult != null) {
+            result.error("BUSY", "Ya hay una operación de archivos en curso", null)
+            return
+        }
+        pendingJsonResult = result
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "*/*"
+            putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("application/json", "text/json", "text/plain", "application/octet-stream"))
+        }
+        try {
+            startActivityForResult(intent, IMPORT_JSON_REQUEST_CODE)
+        } catch (e: Exception) {
+            pendingJsonResult = null
+            result.error("PICK_JSON_FAILED", e.message, null)
+        }
+    }
+
+    private fun saveJsonFile(content: String, fileName: String, result: MethodChannel.Result) {
+        if (pendingJsonResult != null) {
+            result.error("BUSY", "Ya hay una operación de archivos en curso", null)
+            return
+        }
+        pendingJsonResult = result
+        pendingJsonExport = content
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "application/json"
+            putExtra(Intent.EXTRA_TITLE, fileName)
+        }
+        try {
+            startActivityForResult(intent, EXPORT_JSON_REQUEST_CODE)
+        } catch (e: Exception) {
+            pendingJsonResult = null
+            pendingJsonExport = null
+            result.error("SAVE_JSON_FAILED", e.message, null)
+        }
+    }
+
+    @Deprecated("Deprecated in Android API")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != IMPORT_JSON_REQUEST_CODE && requestCode != EXPORT_JSON_REQUEST_CODE) return
+
+        val result = pendingJsonResult ?: return
+        pendingJsonResult = null
+
+        if (resultCode != RESULT_OK || data?.data == null) {
+            pendingJsonExport = null
+            result.success(if (requestCode == IMPORT_JSON_REQUEST_CODE) null else false)
+            return
+        }
+
+        val uri = data.data!!
+        try {
+            if (requestCode == IMPORT_JSON_REQUEST_CODE) {
+                val fileName = contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) cursor.getString(0) else null
+                } ?: uri.lastPathSegment.orEmpty()
+                if (!fileName.endsWith(".json", ignoreCase = true)) {
+                    result.error("INVALID_FILE", "Selecciona un documento .json", null)
+                    return
+                }
+                val json = contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }
+                    ?: throw IllegalStateException("No se pudo leer el archivo")
+                result.success(json)
+            } else {
+                val content = pendingJsonExport ?: ""
+                pendingJsonExport = null
+                contentResolver.openOutputStream(uri)?.bufferedWriter(Charsets.UTF_8)?.use { it.write(content) }
+                    ?: throw IllegalStateException("No se pudo guardar el archivo")
+                result.success(true)
+            }
+        } catch (e: Exception) {
+            pendingJsonExport = null
+            result.error("JSON_FILE_ERROR", e.message, null)
         }
     }
 
@@ -256,5 +349,21 @@ class MainActivity : FlutterActivity() {
             return settingValue?.contains(service) == true
         }
         return false
+    }
+
+    override fun onRestart() {
+        try {
+            super.onRestart()
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Error en onRestart: ${e.message}")
+        }
+    }
+
+    override fun onPostResume() {
+        try {
+            super.onPostResume()
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Error en onPostResume: ${e.message}")
+        }
     }
 }

@@ -1,11 +1,9 @@
 package com.jaylizapp.demonitalk_pro
 
-import com.google.gson.Gson
 import java.text.Normalizer
 import java.util.regex.Pattern
 
 object VoiceTextNormalizer {
-    private val gson = Gson()
     private val diacriticsPattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+")
     private val whitespacePattern = Regex("\\s+")
     private val nonAlphanumericPattern = Regex("[^a-z0-9]+")
@@ -38,15 +36,8 @@ object VoiceTextNormalizer {
     fun normalize(text: String): String {
         if (text.isEmpty()) return ""
 
-        if (NativeEngine.isAvailable()) {
-            try {
-                val res = NativeEngine.normalizeText(text)
-                if (res.isNotEmpty()) return res
-            } catch (_: Throwable) {
-            }
-        }
-
-        // Fallback to Kotlin implementation
+        // Keep voice normalization in Kotlin; JNI normalization aborted on
+        // affected Android devices during speech-result handling.
         val nfdNormalizedString = Normalizer.normalize(text, Normalizer.Form.NFD)
         val withoutDiacritics = diacriticsPattern.matcher(nfdNormalizedString).replaceAll("")
         var cleanText = withoutDiacritics
@@ -67,22 +58,7 @@ object VoiceTextNormalizer {
     fun findWakeWord(text: String): WakeWordMatch? {
         if (text.isEmpty()) return null
 
-        if (NativeEngine.isAvailable()) {
-            try {
-                val json = NativeEngine.findWakeWord(text)
-                if (json.isNotEmpty()) {
-                    val map = gson.fromJson(json, Map::class.java)
-                    val wake = map["wake_word"] as? String
-                    val rem = map["remaining_text"] as? String ?: ""
-                    if (!wake.isNullOrEmpty()) {
-                        return WakeWordMatch(wakeWord = wake, remainingText = rem)
-                    }
-                }
-            } catch (_: Throwable) {
-            }
-        }
-
-        // Fallback to Kotlin implementation
+        // Use the Kotlin wake-word parser to keep voice recognition off JNI.
         val normalizedText = normalize(text)
         if (normalizedText.isEmpty()) return null
 
