@@ -104,6 +104,7 @@ class AccessibilityController(
             "wasap" to "com.whatsapp",
             "wasat" to "com.whatsapp",
             "guatsap" to "com.whatsapp",
+            "guasa" to "com.whatsapp",
             "camara" to "com.android.camera",
             "camera" to "com.android.camera",
             "ajustes" to "com.android.settings",

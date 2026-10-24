@@ -139,15 +139,11 @@ class CommandRepository(private val context: Context) {
         return prefs.getString(EXPORT_PATH_KEY, "") ?: ""
     }
 
-    private var cachedCommands: List<VoiceCommand>? = null
-
     fun saveCommands(commands: List<VoiceCommand>) {
-        cachedCommands = commands
         prefs.edit { putString(COMMANDS_KEY, gson.toJson(commands)) }
     }
 
     fun clearCache() {
-        cachedCommands = null
         prefs.edit { remove(COMMANDS_KEY) }
     }
 
@@ -162,8 +158,7 @@ class CommandRepository(private val context: Context) {
     }
 
     fun loadCommands(): List<VoiceCommand> {
-        cachedCommands?.let { return it }
-
+        // Read the latest saved list so the long-running speech service sees imports immediately.
         val json = prefs.getString(COMMANDS_KEY, null)
         val currentCommands = if (json == null) {
             getDefaultCommands()
@@ -190,7 +185,6 @@ class CommandRepository(private val context: Context) {
         if (modified) {
             prefs.edit { putString(COMMANDS_KEY, gson.toJson(uniqueCommands)) }
         }
-        cachedCommands = uniqueCommands
         return uniqueCommands
     }
 

@@ -92,7 +92,8 @@ class CommandHandler(private val context: Context) {
             val mentionsWhatsapp = normalizedText.contains("whatsapp") ||
                     normalizedText.contains("wasap") ||
                     normalizedText.contains("wasat") ||
-                    normalizedText.contains("guatsap")
+                    normalizedText.contains("guatsap") ||
+                    normalizedText.contains("guasa")
 
             if (mentionsWhatsapp) {
                 executeSequence(listOf("open_app:whatsapp", "click_first_chat"), commands)
@@ -309,23 +310,66 @@ class CommandHandler(private val context: Context) {
             }
         }
 
-        val command = commands.firstOrNull { voiceCommand ->
-            val trigger = voiceCommand.trigger.normalize()
-            normalizedText == trigger ||
-                    normalizedText.contains(trigger) ||
-                    isFuzzyMatch(normalizedText, trigger)
-        }
+        val canonicalText = canonicalCommandPhrase(normalizedText)
+        val command = commands
+            .sortedByDescending { it.trigger.normalize().length }
+            .firstOrNull { voiceCommand ->
+                val trigger = voiceCommand.trigger.normalize()
+                val canonicalTrigger = canonicalCommandPhrase(trigger)
+                normalizedText == trigger ||
+                        containsCommandPhrase(normalizedText, trigger) ||
+                        canonicalText == canonicalTrigger ||
+                        containsCommandPhrase(canonicalText, canonicalTrigger) ||
+                        isFuzzyMatch(normalizedText, trigger)
+            }
 
         if (command != null) {
+            Log.i(
+                "CommandHandler",
+                "Disparador '" + command.trigger + "' reconocido para '" + normalizedText +
+                        "'; requiereRoot=" + command.isRoot
+            )
             if (command.action.startsWith("internal_")) {
                 internalListener?.invoke(command.action)
             } else {
-                executeAsync(command.action)
+                executeAsync(command.action, forceRoot = command.isRoot)
             }
             return true
         }
 
+        Log.w(
+            "CommandHandler",
+            "No hubo comando coincidente para '" + normalizedText +
+                    "'. Disparadores cargados: " + commands.joinToString { it.trigger }
+        )
         return false
+    }
+
+    private fun canonicalCommandPhrase(text: String): String {
+        var canonical = text.normalize()
+            .replace(Regex("^(?:el|la|los|las|un|una)\\s+"), "")
+        val ordinals = mapOf(
+            "primer" to "1", "primero" to "1", "primera" to "1",
+            "segundo" to "2", "segunda" to "2",
+            "tercer" to "3", "tercero" to "3", "tercera" to "3",
+            "cuarto" to "4", "cuarta" to "4",
+            "quinto" to "5", "quinta" to "5",
+            "sexto" to "6", "sexta" to "6",
+            "septimo" to "7", "septima" to "7",
+            "octavo" to "8", "octava" to "8",
+            "noveno" to "9", "novena" to "9",
+            "decimo" to "10", "decima" to "10"
+        )
+        for ((word, number) in ordinals) {
+            canonical = canonical.replace(Regex("\\b" + Regex.escape(word) + "\\b"), number)
+        }
+        return canonical.trim()
+    }
+
+    private fun containsCommandPhrase(text: String, phrase: String): Boolean {
+        if (phrase.isBlank()) return false
+        val pattern = Regex("(?<![a-z0-9])" + Regex.escape(phrase) + "(?![a-z0-9])")
+        return pattern.containsMatchIn(text)
     }
 
     private fun isFuzzyMatch(text: String, trigger: String): Boolean {
@@ -351,18 +395,18 @@ class CommandHandler(private val context: Context) {
         }.start()
     }
 
-    private fun executeAsync(action: String) {
-        Log.i("CommandHandler", "Despachando acción de voz: '$action'")
+    private fun executeAsync(action: String, forceRoot: Boolean = false) {
+        Log.i("CommandHandler", "Despachando acción de voz: '$action' (forceRoot=$forceRoot)")
         Thread {
             try {
-                processAction(action)
+                processAction(action, forceRoot)
             } catch (e: Exception) {
                 Log.e("CommandHandler", "Error ejecutando acción '$action'", e)
             }
         }.start()
     }
 
-    private fun processAction(action: String) {
+    private fun processAction(action: String, forceRoot: Boolean = false) {
         val cleanAction = action.trim()
         if (cleanAction.isEmpty()) return
 
@@ -373,7 +417,7 @@ class CommandHandler(private val context: Context) {
             if (subActions.size > 1) {
                 Thread {
                     for ((index, sub) in subActions.withIndex()) {
-                        processAction(sub)
+                        processAction(sub, forceRoot)
                         if (index < subActions.lastIndex) {
                             try { Thread.sleep(350) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
                         }
@@ -391,8 +435,13 @@ class CommandHandler(private val context: Context) {
         val repository = CommandRepository(context)
         val mode = repository.getExecutionMode()
 
-        val allowRoot = (mode == "HYBRID" || mode == "ROOT")
-        val allowAccessibility = (mode == "HYBRID" || mode == "ACCESSIBILITY")
+        if (forceRoot && !ShellUtils.isRootAvailable()) {
+            Log.e("CommandHandler", "La acción '$cleanAction' requiere Root, pero Root no está disponible")
+            return
+        }
+
+        val allowRoot = forceRoot || mode == "HYBRID" || mode == "ROOT"
+        val allowAccessibility = !forceRoot && (mode == "HYBRID" || mode == "ACCESSIBILITY")
         val accessibilityOnlyAction = cleanAction.startsWith("open_app:") ||
                 cleanAction.startsWith("click_") ||
                 cleanAction in setOf("show_grid", "show_numbers", "hide_overlays", "click_send")
@@ -442,6 +491,10 @@ class CommandHandler(private val context: Context) {
             }
         }
 
+        if (forceRoot) {
+            Log.i("CommandHandler", "Resultado de la acción Root '$cleanAction': $shellSuccess")
+        }
+
         if (!shellSuccess && allowAccessibility) {
             try {
                 val accessibilitySuccess = accessibilityController.execute(cleanAction)
@@ -450,7 +503,7 @@ class CommandHandler(private val context: Context) {
                 Log.e("CommandHandler", "Error ejecutando AccessibilityService: $cleanAction", e)
             }
         } else if (!shellSuccess) {
-            Log.w("CommandHandler", "Acción '$cleanAction' sin ejecutarse: modo '$mode' no permite accesibilidad y root no respondió")
+            Log.w("CommandHandler", "Acción '$cleanAction' sin ejecutarse: modo '$mode', requiereRoot=$forceRoot")
         }
     }
 
