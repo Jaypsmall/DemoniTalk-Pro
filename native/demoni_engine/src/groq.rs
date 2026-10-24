@@ -28,7 +28,7 @@ pub struct ResponseMessage {
     pub content: String,
 }
 
-/// Consulta a la API de Groq de forma síncrona
+/// Consulta a la API de Groq de forma síncrona con validación de estado HTTP
 pub fn ask_groq(prompt: &str, api_key: &str) -> Result<String, Box<dyn Error>> {
     let client = reqwest::blocking::Client::builder()
         .timeout(std::time::Duration::from_secs(8))
@@ -52,12 +52,21 @@ pub fn ask_groq(prompt: &str, api_key: &str) -> Result<String, Box<dyn Error>> {
         messages,
     };
 
-    let res = client
+    let response = client
         .post("https://api.groq.com/openai/v1/chat/completions")
         .bearer_auth(api_key)
         .json(&request_body)
-        .send()?
-        .json::<GroqResponse>()?;
+        .send()?;
+
+    // Validación vital: Si Groq devuelve un error (401, 429, 500, etc.), 
+    // lo atrapamos y devolvemos el texto del error en lugar de hacer que crashee el JSON.
+    if !response.status().is_success() {
+        let status = response.status();
+        let error_text = response.text().unwrap_or_else(|_| "Cuerpo de error ilegible".to_string());
+        return Err(format!("Error de la API de Groq [{}]: {}", status, error_text).into());
+    }
+
+    let res: GroqResponse = response.json()?;
 
     if let Some(choice) = res.choices.into_iter().next() {
         Ok(choice.message.content)
