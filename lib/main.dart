@@ -673,7 +673,7 @@ class _CommandScreenState extends State<CommandScreen> {
                 _buildTitle(),
                 const SizedBox(height: 8),
                 Text(
-                  "Version 2.0.2 Pro (Flutter)",
+                  "Version 2.0.3 Pro ",
                   style: TextStyle(
                     fontSize: 12,
                     color: widget.isDarkMode ? _DemoniTalkAppState.ashGrey : Colors.grey.shade700,

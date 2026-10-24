@@ -272,7 +272,7 @@ class FloatingButtonService : Service() {
                         return@withContext
                     } else if (promptForAi.isNotEmpty()) {
                         Log.w("DemoniTalk", "Pregunta no enviada: la IA está desactivada en ajustes")
-                        ttsManager.speakText("La IA esta desactivada.") {
+                        ttsManager.speakText("") {
                             isWaitingForCommandAfterWake = false
                             if (!isServiceDestroyed && (isContinuousMode || isVigilanceMode)) {
                                 scheduleListeningRestart(500)
@@ -387,7 +387,7 @@ class FloatingButtonService : Service() {
         speechManager.stopListening()
 
         if (!aiAssistant.isAiAvailable()) {
-            ttsManager.speakText("La IA está desactivada.") {
+            ttsManager.speakText("") {
                 isWaitingForCommandAfterWake = false
                 if (!isServiceDestroyed && (isContinuousMode || isVigilanceMode)) {
                     scheduleListeningRestart(500)
