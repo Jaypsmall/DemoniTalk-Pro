@@ -1,11 +1,12 @@
 package com.jaylizapp.demonitalk_pro
 
 import android.os.Build
-import java.io.DataOutputStream
+import android.util.Log
 import java.util.concurrent.TimeUnit
 
 object ShellUtils {
 
+    private const val TAG = "ShellUtils"
     private var rootGranted: Boolean? = null
 
     fun resetRootCache() {
@@ -17,12 +18,8 @@ object ShellUtils {
 
         return try {
             val process = Runtime.getRuntime().exec(arrayOf("su", "-c", "id"))
-            val os = DataOutputStream(process.outputStream)
-            os.writeBytes("exit\n")
-            os.flush()
-            
             val finished = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                process.waitFor(1, TimeUnit.SECONDS)
+                process.waitFor(3, TimeUnit.SECONDS)
             } else {
                 process.waitFor() == 0
             }
@@ -31,6 +28,7 @@ object ShellUtils {
             rootGranted = isRoot
             isRoot
         } catch (e: Exception) {
+            Log.e(TAG, "Error verificando disponibilidad de Root: ${e.message}")
             rootGranted = false
             false
         }
@@ -40,25 +38,23 @@ object ShellUtils {
         if (!isRootAvailable()) return false
 
         var process: Process? = null
-        var os: DataOutputStream? = null
         return try {
-            process = Runtime.getRuntime().exec("su")
-            os = DataOutputStream(process.outputStream)
-            os.writeBytes("$command\n")
-            os.writeBytes("exit\n")
-            os.flush()
-            
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val finished = process.waitFor(2, TimeUnit.SECONDS)
-                finished && process.exitValue() == 0
+            process = Runtime.getRuntime().exec(arrayOf("su", "-c", command))
+            val finished = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                process.waitFor(5, TimeUnit.SECONDS)
             } else {
                 process.waitFor() == 0
             }
+            val success = finished && process.exitValue() == 0
+            if (!success) {
+                Log.w(TAG, "El comando Shell devolvió un código no cero para: $command")
+            }
+            success
         } catch (e: Exception) {
+            Log.e(TAG, "Error ejecutando comando Root [$command]: ${e.message}")
             false
         } finally {
-            try { os?.close() } catch (e: Exception) {}
-            try { process?.destroy() } catch (e: Exception) {}
+            try { process?.destroy() } catch (_: Exception) {}
         }
     }
 }

@@ -1,9 +1,12 @@
 package com.jaylizapp.demonitalk_pro
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import androidx.core.content.ContextCompat
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import org.vosk.Model
@@ -81,6 +84,18 @@ class VoskSpeechManager(
         if (isListening) return
         listenRequested = true
 
+        if (ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.RECORD_AUDIO
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.e(TAG, "No hay permiso RECORD_AUDIO concedido para Vosk.")
+            isListening = false
+            listenRequested = false
+            onErrorStopWaiting()
+            return
+        }
+
         if (voskModel == null) {
             initModel { success ->
                 if (!listenRequested) return@initModel
@@ -99,6 +114,18 @@ class VoskSpeechManager(
 
     private fun startListeningInternal() {
         if (!listenRequested) return
+        if (ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.RECORD_AUDIO
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.e(TAG, "Sin permiso RECORD_AUDIO al iniciar Vosk.")
+            isListening = false
+            listenRequested = false
+            onErrorStopWaiting()
+            return
+        }
+
         val model = voskModel ?: return
         try {
             stopSpeechService()
@@ -112,7 +139,7 @@ class VoskSpeechManager(
             speechService?.startListening(this)
             onReady()
             Log.d(TAG, "Vosk Speech Service inició la escucha offline")
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.e(TAG, "Error al iniciar Vosk SpeechService: ${e.message}", e)
             isListening = false
             if (isModeActive()) {

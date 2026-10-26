@@ -89,6 +89,7 @@ class DemoniAccessibilityService : AccessibilityService() {
                     putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                     putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
                     putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
+                    putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
                 }
 
                 speechRecognizer?.startListening(intent)
@@ -114,7 +115,7 @@ class DemoniAccessibilityService : AccessibilityService() {
         override fun onEndOfSpeech() { isListening = false }
         override fun onError(error: Int) {
             isListening = false
-            if (error == 12) {
+            if (error == SpeechRecognizer.ERROR_NETWORK || error == SpeechRecognizer.ERROR_NETWORK_TIMEOUT || error == 12) {
                 preferOnDevice = false
                 try {
                     speechRecognizer?.destroy()

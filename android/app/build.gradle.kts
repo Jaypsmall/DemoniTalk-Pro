@@ -34,7 +34,15 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
+    }
+
+    androidResources {
+        noCompress += listOf("mdl", "fst", "dubm", "ie", "mat", "conf")
     }
 }
 
@@ -50,6 +58,7 @@ flutter {
 
 dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
+    implementation("com.google.android.play:core:1.10.3")
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("com.alphacephei:vosk-android:0.3.47")
 }
