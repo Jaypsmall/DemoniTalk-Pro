@@ -87,3 +87,16 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_launcher_icons: ^0.13.1 # (o la versión más reciente)
+
+
+flutter_launcher_icons:
+  image_path: "assets/icon/icon.png" # Ruta de tu imagen original
+  android: true
+  ios: true
+  # Opcional: si quieres un nombre diferente o color de fondo para versiones adaptativas en Android
+  # remove_alpha_ios: true
