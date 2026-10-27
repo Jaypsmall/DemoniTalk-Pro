@@ -6,6 +6,10 @@
 <img src="https://img.shields.io/badge/DOWNLOAD_DEMONITALK_PRO_v2.0.2_APK-181717?style=flat&logo=android&logoColor=FFD600" alt="Download Rust Release">
 </a>
 
+<a href="https://github.com/Jaypsmall/DemoniTalk-Pro/releases/download/Rust/DemoniTalk_Pro_v2.0.5.apk">
+<img src="https://img.shields.io/badge/DOWNLOAD_DEMONITALK_PRO_v2.0.5_APK-181717?style=flat&logo=android&logoColor=FFD600" alt="Download Rust Release">
+</a>
+
 ---
 
 ## 🚀 Arquitectura del Proyecto
