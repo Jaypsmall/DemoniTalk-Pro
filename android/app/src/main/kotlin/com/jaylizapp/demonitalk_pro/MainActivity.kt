@@ -176,6 +176,7 @@ class MainActivity : FlutterActivity() {
                     result.success(
                         mapOf(
                             "executionMode" to repository.getExecutionMode(),
+                            "speechEngine" to repository.getSpeechEngine(),
                             "exportPath" to repository.getExportPath(),
                             "isDarkMode" to repository.isDarkMode()
                         )
@@ -184,9 +185,11 @@ class MainActivity : FlutterActivity() {
 
                 "saveSystemSettings" -> {
                     val executionMode = call.argument<String>("executionMode") ?: "HYBRID"
+                    val speechEngine = call.argument<String>("speechEngine") ?: "VOSK"
                     val exportPath = call.argument<String>("exportPath") ?: ""
                     val isDarkMode = call.argument<Boolean>("isDarkMode") ?: true
                     repository.saveExecutionMode(executionMode)
+                    repository.saveSpeechEngine(speechEngine)
                     repository.saveExportPath(exportPath)
                     repository.saveDarkMode(isDarkMode)
                     result.success(true)

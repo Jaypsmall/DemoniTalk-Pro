@@ -126,7 +126,13 @@ class VoskSpeechManager(
             return
         }
 
-        val model = voskModel ?: return
+        val model = voskModel
+        if (model == null) {
+            isListening = false
+            if (isModeActive()) onErrorRestart() else onErrorStopWaiting()
+            return
+        }
+
         try {
             stopSpeechService()
 
@@ -142,8 +148,11 @@ class VoskSpeechManager(
         } catch (e: Throwable) {
             Log.e(TAG, "Error al iniciar Vosk SpeechService: ${e.message}", e)
             isListening = false
+            stopSpeechService()
             if (isModeActive()) {
-                onErrorRestart()
+                mainHandler.postDelayed({
+                    if (isModeActive()) onErrorRestart()
+                }, 1000)
             } else {
                 listenRequested = false
                 onErrorStopWaiting()

@@ -6,9 +6,8 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
 
-class AiAssistant(context: Context) {
+class AiAssistant(context: Context, private val ttsManager: TtsManager?) {
 
-    private val tag = "AiAssistant"
     private val repository = CommandRepository(context)
 
     fun isAiEnabled(): Boolean {
@@ -19,170 +18,87 @@ class AiAssistant(context: Context) {
         return isAiEnabled()
     }
 
-    fun askFreeAi(prompt: String): String {
+    fun askFreeAi(prompt: String): String? {
+        if (!isAiAvailable()) {
+            Log.d("AiAssistant", "IA desactivada en preferencias.")
+            ttsManager?.speakText("La inteligencia artificial está desactivada en las preferencias.")
+            return null
+        }
+
         val finalPrompt = buildPrompt(prompt)
-        Log.i(tag, "Voice request entered AI provider chain")
 
-        // 0. Petición a Groq API si hay API key configurada (ultra rápido para voz)
-        val groqKey = repository.getGroqApiKey().trim()
-        if (groqKey.isEmpty()) {
-            val quickWebAnswer = fetchDuckDuckGoAnswer(prompt)
-            if (!quickWebAnswer.isNullOrBlank()) {
-                Log.i(tag, "Answer received through DuckDuckGo")
-                return quickWebAnswer
+        // Try POST with models: openai, deepseek, mistral, unity, grok
+        val models = listOf("openai", "deepseek", "mistral", "unity", "grok")
+        for (model in models) {
+            val resPost = fetchPollinationsPost(finalPrompt, model)
+            if (!resPost.isNullOrEmpty()) {
+                Log.d("AiAssistant", "Respuesta obtenida via POST (model=$model): $resPost")
+                return resPost
             }
-            return "Configura una clave de Groq para usar la IA."
         }
 
-        val groqRes = fetchGroq(finalPrompt, groqKey)
-        if (!groqRes.isNullOrBlank()) {
-            Log.i(tag, "AI answered through Groq")
-            return groqRes
+        // Fallback to GET across multiple models
+        val getModels = listOf("openai", "mistral", "deepseek")
+        for (model in getModels) {
+            val resGet = fetchPollinationsGet(finalPrompt, model)
+            if (!resGet.isNullOrEmpty()) {
+                Log.d("AiAssistant", "Respuesta obtenida via GET (model=$model): $resGet")
+                return resGet
+            }
         }
-        Log.e(tag, "Groq failed; skipping slow secondary providers")
-        return "No pude conectar con Groq. Revisa la conexión y tu clave de API."
 
-        // 1. Petición POST dinámica a la IA LLM (Pollinations)
-
-        // 2. Petición GET dinámica a la IA LLM
-
-        // 3. Búsqueda web dinámica instantánea
-        Log.e(tag, "All AI providers and web fallback failed")
-        return "No pude conectar con los servidores de la IA en este momento. Revisa tu conexión a internet."
+        Log.w("AiAssistant", "Todos los métodos y modelos de IA fallaron.")
+        return null
     }
 
     private fun buildPrompt(prompt: String): String {
         val instructions = repository.getAiInstructions().trim()
         val memory = repository.getAiMemory().trim()
         return buildString {
+            appendLine("Eres Demoni, asistente de voz en español. Responde corto, claro y sin emojis.")
             if (instructions.isNotEmpty()) {
-                appendLine("Instrucciones personalizadas: $instructions")
+                appendLine()
+                appendLine("Instrucciones del usuario:")
+                appendLine(instructions)
             }
             if (memory.isNotEmpty()) {
-                appendLine("Memoria recordada: $memory")
+                appendLine()
+                appendLine("Memoria guardada:")
+                appendLine(memory)
             }
+            appendLine()
+            appendLine("Usuario:")
             append(prompt.trim())
         }
     }
 
-    internal fun fetchPollinationsPost(prompt: String): String? {
+    internal fun fetchPollinationsPost(prompt: String, model: String = "openai"): String? {
+        var connection: HttpURLConnection? = null
         return try {
             val url = URL("https://text.pollinations.ai/")
-            val connection = url.openConnection() as HttpURLConnection
+            connection = url.openConnection() as HttpURLConnection
             connection.requestMethod = "POST"
-            connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            connection.setRequestProperty("Content-Type", "application/json")
             connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Mobile)")
-            connection.setRequestProperty("Accept", "text/plain, application/json")
-            connection.connectTimeout = 4000
-            connection.readTimeout = 6000
+            connection.connectTimeout = 8000
+            connection.readTimeout = 10000
             connection.doOutput = true
 
-            val systemContent = "Eres Demoni, un asistente de voz fluido en español. Responde directo y en máximo 2 frases cortas. NUNCA uses emojis."
-            val gson = com.google.gson.Gson()
-            val escapedSystem = gson.toJson(systemContent)
-            val escapedUser = gson.toJson(prompt)
+            val instructions = repository.getAiInstructions().trim()
+            val systemMessage = if (instructions.isNotEmpty()) {
+                "Eres Demoni, asistente de voz en español. Sigue estas reglas del usuario: $instructions. REGLAS: Respuestas cortas en máximo 2 frases, SIN EMOJIS, SIN PUNTOS SUSPENSIVOS."
+            } else {
+                "Eres Demoni, asistente de voz en español. Responde directo con ingenio y corto en máximo 2 frases. REGLAS: SIN EMOJIS, SIN PUNTOS SUSPENSIVOS."
+            }
 
+            val escapedPrompt = com.google.gson.Gson().toJson(prompt)
+            val escapedSystem = com.google.gson.Gson().toJson(systemMessage)
             val jsonInputString = """
                 {
+                  "model": "$model",
                   "messages": [
                     {"role": "system", "content": $escapedSystem},
-                    {"role": "user", "content": $escapedUser}
-                  ],
-                  "model": "openai"
-                }
-            """.trimIndent()
-
-            connection.outputStream.use { os ->
-                val input = jsonInputString.toByteArray(charset("utf-8"))
-                os.write(input, 0, input.size)
-            }
-
-            if (connection.responseCode == 200) {
-                val responseText = connection.inputStream.bufferedReader(charset("utf-8")).use { it.readText() }.trim()
-                if (responseText.isNotEmpty()) return cleanResponse(responseText)
-            } else {
-                Log.w(tag, "Pollinations POST returned HTTP ${connection.responseCode}")
-            }
-            null
-        } catch (e: Exception) {
-            Log.e("AiAssistant", "Error en IA Gratuita (POST): ${e.message}")
-            null
-        }
-    }
-
-    fun fetchPollinationsGet(prompt: String): String? {
-        return try {
-            val systemPrompt = "Eres Demoni, un asistente de voz en español. Responde corto en máximo 2 frases. SIN EMOJIS."
-            val encodedPrompt = URLEncoder.encode(prompt, "UTF-8")
-            val encodedSystem = URLEncoder.encode(systemPrompt, "UTF-8")
-
-            val urlString = "https://text.pollinations.ai/$encodedPrompt?system=$encodedSystem&model=openai"
-            val url = URL(urlString)
-            val connection = url.openConnection() as HttpURLConnection
-            connection.requestMethod = "GET"
-            connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Mobile)")
-            connection.setRequestProperty("Accept", "*/*")
-            connection.connectTimeout = 4000
-            connection.readTimeout = 6000
-
-            if (connection.responseCode == 200) {
-                val responseText = connection.inputStream.bufferedReader(charset("utf-8")).use { it.readText() }.trim()
-                if (responseText.isNotEmpty()) return cleanResponse(responseText)
-            } else {
-                Log.w(tag, "Pollinations GET returned HTTP ${connection.responseCode}")
-            }
-            null
-        } catch (e: Exception) {
-            Log.e("AiAssistant", "Error en IA Gratuita (GET): ${e.message}")
-            null
-        }
-    }
-
-    private fun fetchDuckDuckGoAnswer(prompt: String): String? {
-        return try {
-            val encodedPrompt = URLEncoder.encode(prompt, "UTF-8")
-            val urlString = "https://api.duckduckgo.com/?q=$encodedPrompt&format=json&no_html=1&skip_disambig=1"
-            val url = URL(urlString)
-            val connection = url.openConnection() as HttpURLConnection
-            connection.requestMethod = "GET"
-            connection.connectTimeout = 1200
-            connection.readTimeout = 1800
-
-            if (connection.responseCode == 200) {
-                val json = connection.inputStream.bufferedReader(charset("utf-8")).use { it.readText() }
-                val jsonObj = com.google.gson.JsonParser.parseString(json).asJsonObject
-                val abstractText = jsonObj.get("AbstractText")?.asString?.trim() ?: ""
-                if (abstractText.isNotEmpty()) return cleanResponse(abstractText)
-            }
-            null
-        } catch (_: Exception) {
-            null
-        }
-    }
-
-    internal fun fetchGroq(prompt: String, apiKey: String): String? {
-        return try {
-            val url = URL("https://api.groq.com/openai/v1/chat/completions")
-            val connection = url.openConnection() as HttpURLConnection
-            connection.requestMethod = "POST"
-            connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
-            connection.setRequestProperty("Authorization", "Bearer $apiKey")
-            connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Mobile) DemoniTalkPro")
-            connection.connectTimeout = 2500
-            connection.readTimeout = 4500
-            connection.doOutput = true
-
-            val systemContent = "Eres Demoni, un asistente de voz conciso en español. Responde en una o dos frases muy cortas para ser leídas por voz. NUNCA uses emojis."
-            val gson = com.google.gson.Gson()
-            val escapedSystem = gson.toJson(systemContent)
-            val escapedUser = gson.toJson(prompt)
-
-            val jsonInputString = """
-                {
-                  "model": "openai/gpt-oss-120b",
-                  "messages": [
-                    {"role": "system", "content": $escapedSystem},
-                    {"role": "user", "content": $escapedUser}
+                    {"role": "user", "content": $escapedPrompt}
                   ]
                 }
             """.trimIndent()
@@ -192,37 +108,98 @@ class AiAssistant(context: Context) {
                 os.write(input, 0, input.size)
             }
 
-            if (connection.responseCode == 200) {
-                val responseText = connection.inputStream.bufferedReader(charset("utf-8")).use { it.readText() }.trim()
+            val responseCode = connection.responseCode
+            if (responseCode == 200) {
+                var responseText = connection.inputStream.use { stream ->
+                    stream.bufferedReader().use { it.readText() }
+                }.trim()
+
                 if (responseText.isNotEmpty()) {
-                    val jsonObj = com.google.gson.JsonParser.parseString(responseText).asJsonObject
-                    val choices = jsonObj.get("choices") as? com.google.gson.JsonArray
-                    if (choices != null && choices.size() > 0) {
-                        val element = choices.get(0)
-                        val messageObj = element.asJsonObject.getAsJsonObject("message")
-                        val content = messageObj.get("content")?.asString?.trim() ?: ""
-                        if (content.isNotEmpty()) return cleanResponse(content)
+                    // Si la respuesta viene en formato JSON, la parseamos
+                    if (responseText.startsWith("{")) {
+                        try {
+                            val map = com.google.gson.Gson().fromJson(responseText, Map::class.java)
+                            val choices = map["choices"] as? List<*>
+                            if (!choices.isNullOrEmpty()) {
+                                val choice = choices[0] as? Map<*, *>
+                                val message = choice?.get("message") as? Map<*, *>
+                                val content = (message?.get("content") as? String)?.trim()
+                                if (!content.isNullOrBlank()) return content
+                            }
+                        } catch (e: Exception) {
+                            Log.e("AiAssistant", "Error parsing POST JSON ($model): ${e.message}")
+                        }
+                    }
+
+                    // Si viene como texto plano rodeado de comillas, se las quitamos para evitar basura en el TTS
+                    if (responseText.startsWith("\"") && responseText.endsWith("\"") && responseText.length >= 2) {
+                        responseText = responseText.substring(1, responseText.length - 1).trim()
+                    }
+
+                    // Normalizamos saltos de línea y escapados
+                    responseText = responseText.replace("\\n", " ").replace("\\\"", "\"").trim()
+
+                    if (responseText.isNotEmpty()) {
+                        return responseText
                     }
                 }
             } else {
-                val errorBody = connection.errorStream
-                    ?.bufferedReader(charset("utf-8"))
-                    ?.use { it.readText() }
-                    ?.take(1000)
-                    .orEmpty()
-                Log.e("AiAssistant", "Error Groq API HTTP code: ${connection.responseCode}; body: $errorBody")
+                try {
+                    connection.errorStream?.use { it.readBytes() }
+                } catch (_: Exception) {}
             }
             null
         } catch (e: Exception) {
-            Log.e("AiAssistant", "Error en Groq API: ${e.message}")
             null
+        } finally {
+            connection?.disconnect()
         }
     }
 
-    private fun cleanResponse(text: String): String {
-        return text
-            .replace(Regex("""[\uD83C-\uDBFF\uDC00-\uDFFF\u2600-\u27BF]"""), "")
-            .replace(Regex("""[🚀😈🤖⚡🔥✨👍]"""), "")
-            .trim()
+    fun fetchPollinationsGet(prompt: String, model: String = "openai"): String? {
+        var connection: HttpURLConnection? = null
+        return try {
+            val systemPrompt = "Eres Demoni, asistente de voz en español. Responde en máximo 2 frases. REGLAS: SIN EMOJIS, SIN PUNTOS SUSPENSIVOS."
+            val encodedPrompt = URLEncoder.encode(prompt, "UTF-8")
+            val encodedSystem = URLEncoder.encode(systemPrompt, "UTF-8")
+            val urlString = "https://text.pollinations.ai/$encodedPrompt?system=$encodedSystem&model=$model"
+
+            val url = URL(urlString)
+            connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.connectTimeout = 8000
+            connection.readTimeout = 10000
+
+            if (connection.responseCode == 200) {
+                val responseText = connection.inputStream.use { stream ->
+                    stream.bufferedReader().use { it.readText() }
+                }.trim()
+
+                if (responseText.isNotEmpty()) {
+                    if (responseText.startsWith("{")) {
+                        try {
+                            val map = com.google.gson.Gson().fromJson(responseText, Map::class.java)
+                            val choices = map["choices"] as? List<*>
+                            if (!choices.isNullOrEmpty()) {
+                                val choice = choices[0] as? Map<*, *>
+                                val message = choice?.get("message") as? Map<*, *>
+                                val content = (message?.get("content") as? String)?.trim()
+                                if (!content.isNullOrBlank()) return content
+                            }
+                        } catch (_: Exception) {}
+                    }
+                    return responseText
+                }
+            } else {
+                try {
+                    connection.errorStream?.use { it.readBytes() }
+                } catch (_: Exception) {}
+            }
+            null
+        } catch (e: Exception) {
+            null
+        } finally {
+            connection?.disconnect()
+        }
     }
 }

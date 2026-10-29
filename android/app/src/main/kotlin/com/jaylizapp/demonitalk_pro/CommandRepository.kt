@@ -14,6 +14,7 @@ class CommandRepository(private val context: Context) {
     private val EXPORT_PATH_KEY = "export_path"
     private val AI_ENABLED_KEY = "ai_enabled"
     private val EXECUTION_MODE_KEY = "execution_mode"
+    private val SPEECH_ENGINE_KEY = "speech_engine"
     private val GEMINI_ENGINE_ENABLED_KEY = "gemini_engine_enabled"
     private val FREE_AI_ENGINE_ENABLED_KEY = "free_ai_engine_enabled"
     private val AI_INSTRUCTIONS_KEY = "ai_instructions"
@@ -62,6 +63,14 @@ class CommandRepository(private val context: Context) {
 
     fun getExecutionMode(): String {
         return prefs.getString(EXECUTION_MODE_KEY, "HYBRID") ?: "HYBRID"
+    }
+
+    fun saveSpeechEngine(engine: String) {
+        prefs.edit { putString(SPEECH_ENGINE_KEY, engine) }
+    }
+
+    fun getSpeechEngine(): String {
+        return prefs.getString(SPEECH_ENGINE_KEY, "VOSK") ?: "VOSK"
     }
 
     fun saveGeminiEngineEnabled(enabled: Boolean) {

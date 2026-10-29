@@ -225,12 +225,13 @@ class NativeBridge {
       final Map raw = await platform.invokeMethod('getSystemSettings');
       return Map<String, dynamic>.from(raw);
     } catch (_) {
-      return {'executionMode': 'HYBRID', 'exportPath': '', 'isDarkMode': true};
+      return {'executionMode': 'HYBRID', 'speechEngine': 'VOSK', 'exportPath': '', 'isDarkMode': true};
     }
   }
 
   static Future<bool> saveSystemSettings({
     String? executionMode,
+    String? speechEngine,
     String? exportPath,
     bool? isDarkMode,
   }) async {
@@ -238,6 +239,7 @@ class NativeBridge {
       final current = await getSystemSettings();
       final bool result = await platform.invokeMethod('saveSystemSettings', {
         'executionMode': executionMode ?? current['executionMode'] ?? 'HYBRID',
+        'speechEngine': speechEngine ?? current['speechEngine'] ?? 'VOSK',
         'exportPath': exportPath ?? current['exportPath'] ?? '',
         'isDarkMode': isDarkMode ?? current['isDarkMode'] ?? true,
       });
@@ -860,6 +862,7 @@ class _CommandScreenState extends State<CommandScreen> {
     final system = await NativeBridge.getSystemSettings();
     if (!mounted) return;
     String currentMode = system['executionMode'] ?? 'HYBRID';
+    String currentEngine = system['speechEngine'] ?? 'VOSK';
     final pathController = TextEditingController(text: system['exportPath'] ?? '');
 
     showDialog(
@@ -870,49 +873,75 @@ class _CommandScreenState extends State<CommandScreen> {
             "AJUSTES DEL SISTEMA",
             style: TextStyle(color: _DemoniTalkAppState.hellRed, fontWeight: FontWeight.w900),
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text("RUTA DE EXPORTACIÓN", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              TextField(
-                controller: pathController,
-                decoration: const InputDecoration(
-                  hintText: "/sdcard/Download",
-                  isDense: true,
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("MOTOR DE RECONOCIMIENTO DE VOZ:", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                RadioGroup<String>(
+                  groupValue: currentEngine,
+                  onChanged: (val) {
+                    if (val != null) {
+                      setDialogState(() => currentEngine = val);
+                    }
+                  },
+                  child: Column(
+                    children: [
+                      RadioListTile<String>(
+                        dense: true,
+                        title: const Text("Vosk (Sin conexión / Offline)", style: TextStyle(fontSize: 12)),
+                        value: "VOSK",
+                      ),
+                      RadioListTile<String>(
+                        dense: true,
+                        title: const Text("Google Speech (Con conexión / Online)", style: TextStyle(fontSize: 12)),
+                        value: "GOOGLE",
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              const Text("MODO DE EJECUCIÓN DE COMANDOS:", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-              RadioGroup<String>(
-                groupValue: currentMode,
-                onChanged: (val) {
-                  if (val != null) {
-                    setDialogState(() => currentMode = val);
-                  }
-                },
-                child: Column(
-                  children: [
-                    RadioListTile<String>(
-                      dense: true,
-                      title: const Text("Modo Demoníaco (Root + Accesibilidad)", style: TextStyle(fontSize: 12)),
-                      value: "HYBRID",
-                    ),
-                    RadioListTile<String>(
-                      dense: true,
-                      title: const Text("Modo Root", style: TextStyle(fontSize: 12)),
-                      value: "ROOT",
-                    ),
-                    RadioListTile<String>(
-                      dense: true,
-                      title: const Text("Modo Accesibilidad", style: TextStyle(fontSize: 12)),
-                      value: "ACCESSIBILITY",
-                    ),
-                  ],
+                const SizedBox(height: 12),
+                const Text("RUTA DE EXPORTACIÓN", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                TextField(
+                  controller: pathController,
+                  decoration: const InputDecoration(
+                    hintText: "/sdcard/Download",
+                    isDense: true,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                const Text("MODO DE EJECUCIÓN DE COMANDOS:", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                RadioGroup<String>(
+                  groupValue: currentMode,
+                  onChanged: (val) {
+                    if (val != null) {
+                      setDialogState(() => currentMode = val);
+                    }
+                  },
+                  child: Column(
+                    children: [
+                      RadioListTile<String>(
+                        dense: true,
+                        title: const Text("Modo Demoníaco (Root + Accesibilidad)", style: TextStyle(fontSize: 12)),
+                        value: "HYBRID",
+                      ),
+                      RadioListTile<String>(
+                        dense: true,
+                        title: const Text("Modo Root", style: TextStyle(fontSize: 12)),
+                        value: "ROOT",
+                      ),
+                      RadioListTile<String>(
+                        dense: true,
+                        title: const Text("Modo Accesibilidad", style: TextStyle(fontSize: 12)),
+                        value: "ACCESSIBILITY",
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -923,6 +952,7 @@ class _CommandScreenState extends State<CommandScreen> {
               onPressed: () async {
                 await NativeBridge.saveSystemSettings(
                   executionMode: currentMode,
+                  speechEngine: currentEngine,
                   exportPath: pathController.text.trim(),
                 );
                 if (!ctx.mounted) return;
@@ -995,7 +1025,6 @@ class _CommandScreenState extends State<CommandScreen> {
     bool aiEnabled = ai['aiEnabled'] ?? true;
     final instructionsController = TextEditingController(text: ai['instructions'] ?? '');
     final memoryController = TextEditingController(text: ai['memory'] ?? '');
-    final groqApiKeyController = TextEditingController(text: ai['groqApiKey'] ?? '');
 
     showDialog(
       context: context,
@@ -1017,25 +1046,28 @@ class _CommandScreenState extends State<CommandScreen> {
                   onChanged: (val) => setDialogState(() => aiEnabled = val),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  groqApiKeyController.text.trim().isNotEmpty
-                      ? "MOTOR IA: Groq Llama-3.3 70B (Súper rápido)"
-                      : "MOTOR IA: IA Gratuita pública (Sin API key)",
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: groqApiKeyController.text.trim().isNotEmpty ? _DemoniTalkAppState.demoniPurple : Colors.grey,
-                    fontWeight: FontWeight.bold,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: _DemoniTalkAppState.demoniPurple.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: groqApiKeyController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: "Groq API Key (Opcional)",
-                    hintText: "gsk_...",
+                  child: Row(
+                    children: const [
+                      Icon(Icons.auto_awesome, color: _DemoniTalkAppState.demoniPurple, size: 18),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "MOTOR IA: Pollinations (Gratuito / Sin API key)",
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: _DemoniTalkAppState.demoniPurple,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  onChanged: (_) => setDialogState(() {}),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -1069,7 +1101,6 @@ class _CommandScreenState extends State<CommandScreen> {
                   aiEnabled: aiEnabled,
                   instructions: instructionsController.text.trim(),
                   memory: memoryController.text.trim(),
-                  groqApiKey: groqApiKeyController.text.trim(),
                 );
                 if (!ctx.mounted) return;
                 Navigator.pop(ctx);

@@ -1,6 +1,9 @@
 package com.jaylizapp.demonitalk_pro
 
 import android.content.Context
+import android.media.AudioAttributes
+import android.media.AudioManager
+import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.speech.tts.TextToSpeech
@@ -12,106 +15,139 @@ class TtsManager(private val context: Context) {
 
     private var tts: TextToSpeech? = null
     private var isTtsReady = false
+    private val pendingSpeechQueue = mutableListOf<Triple<String, (() -> Unit)?, (() -> Unit)?>>()
     private val mainHandler = Handler(Looper.getMainLooper())
+    private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
     init {
-        tts = TextToSpeech(context) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                isTtsReady = true
-                try {
-                    val result = tts?.setLanguage(Locale.getDefault())
-                    if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                        Log.w("TtsManager", "Idioma TTS no disponible: ${Locale.getDefault()}")
+        createTtsInstance()
+    }
+
+    private fun createTtsInstance() {
+        if (tts != null) return
+        try {
+            tts = TextToSpeech(context) { status ->
+                mainHandler.post {
+                    if (status == TextToSpeech.SUCCESS) {
+                        try {
+                            var result = tts?.setLanguage(Locale.forLanguageTag("es-ES"))
+                            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                                result = tts?.setLanguage(Locale.forLanguageTag("es"))
+                            }
+                            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                                tts?.setLanguage(Locale.getDefault())
+                            }
+
+                            val audioAttributes = AudioAttributes.Builder()
+                                .setUsage(AudioAttributes.USAGE_MEDIA)
+                                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                                .build()
+                            tts?.setAudioAttributes(audioAttributes)
+
+                            isTtsReady = true
+                            Log.i("TtsManager", "TTS inicializado correctamente en español")
+                            flushPendingQueue()
+                        } catch (e: Exception) {
+                            isTtsReady = false
+                            Log.e("TtsManager", "Error configurando TTS: ${e.message}")
+                        }
+                    } else {
+                        isTtsReady = false
+                        Log.e("TtsManager", "No se pudo inicializar TextToSpeech (status=$status)")
                     }
-                } catch (e: Exception) {
-                    Log.e("TtsManager", "Error configurando TTS: ${e.message}")
                 }
-            } else {
-                isTtsReady = false
-                Log.e("TtsManager", "No se pudo inicializar TextToSpeech")
             }
+        } catch (e: Exception) {
+            isTtsReady = false
+            Log.e("TtsManager", "Error creando instancia TextToSpeech: ${e.message}")
+        }
+    }
+
+    private fun flushPendingQueue() {
+        if (pendingSpeechQueue.isEmpty()) return
+        val queueCopy = ArrayList(pendingSpeechQueue)
+        pendingSpeechQueue.clear()
+        for ((text, startCb, doneCb) in queueCopy) {
+            speakText(text, startCb, doneCb)
         }
     }
 
     fun cleanTextForSpeech(text: String): String {
+        if (text.isBlank()) return ""
+
         return text
-            .replace(Regex("""\[CMD:.+?\]""", RegexOption.IGNORE_CASE), "")
-            .replace(Regex("""\[REMEMBER:.+?\]""", RegexOption.IGNORE_CASE), "")
-            .replace(Regex("""[,.;:!?¡¿"'\-\(\)\[\]]"""), " ")
+            // 1. Eliminar etiquetas internas y comandos
+            .replace(Regex("""\[CMD:.+?]""", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("""\[REMEMBER:.+?]""", RegexOption.IGNORE_CASE), "")
+            // 2. Eliminar emojis y símbolos extraños
             .replace(Regex("""[\uD83C-\uDBFF\uDC00-\uDFFF\u2600-\u27BF\u1F300-\u1F9FF]"""), "")
-            .replace(Regex("""[🚀😈🤖⚡🔥✨👍]"""), "")
-            .replace("*", "")
-            .replace("#", "")
-            .replace("_", " ")
+            .replace(Regex("""[🚀😈🤖⚡🔥✨👍•\-*#_–—]"""), " ")
+            // 3. Normalizar puntos suspensivos y comas dobles
+            .replace(Regex("""\.{2,}"""), ".")
+            .replace(Regex(""",{2,}"""), ",")
+            // 4. Cambiar punto decimal entre números (ej. 2-1 o 4.54)
+            .replace(Regex("""(\d+)\.(\d+)"""), "$1,$2")
+            // 5. Eliminar comillas para evitar conflictos en el TTS
+            .replace(Regex("""["'«»]"""), "")
+            // 6. Normalizar espacios múltiples
             .replace(Regex("""\s+"""), " ")
             .trim()
     }
 
-    fun speakText(
-        textToSpeak: String,
-        onStartCallback: (() -> Unit)? = null,
-        onDoneCallback: (() -> Unit)? = null
-    ) {
-        if (textToSpeak.length == 0) {
-            onDoneCallback?.invoke()
-            return
-        }
-
+    fun speakText(textToSpeak: String, onStartCallback: (() -> Unit)? = null, onDoneCallback: (() -> Unit)? = null) {
         if (!isTtsReady || tts == null) {
-            mainHandler.postDelayed(object : java.lang.Runnable {
-                private var retries = 0
-                override fun run() {
-                    if (isTtsReady && tts != null) {
-                        performSpeak(textToSpeak, onStartCallback, onDoneCallback)
-                    } else if (retries < 15) {
-                        retries++
-                        mainHandler.postDelayed(this, 150)
-                    } else {
-                        Log.e("TtsManager", "TTS timeout al inicializar motor de voz")
-                        onDoneCallback?.invoke()
-                    }
-                }
-            }, 150)
+            Log.w("TtsManager", "TTS aún no está listo. Encolando texto: '$textToSpeak'")
+            pendingSpeechQueue.add(Triple(textToSpeak, onStartCallback, onDoneCallback))
+            createTtsInstance()
             return
         }
 
-        performSpeak(textToSpeak, onStartCallback, onDoneCallback)
-    }
+        try {
+            audioManager.mode = AudioManager.MODE_NORMAL
+            audioManager.isSpeakerphoneOn = true
+            audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_UNMUTE, 0)
 
-    private fun performSpeak(
-        textToSpeak: String,
-        onStartCallback: (() -> Unit)? = null,
-        onDoneCallback: (() -> Unit)? = null
-    ) {
+            val currentVol = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+            if (currentVol == 0) {
+                val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+                val targetVol = if (maxVol > 0) (maxVol * 0.7f).toInt().coerceAtLeast(1) else 5
+                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, targetVol, 0)
+            }
+        } catch (_: Exception) {}
+
+        Log.d("TtsManager", "Hablando en voz alta por altavoz: '$textToSpeak'")
+
         tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onStart(id: String?) {
-                Log.i("TtsManager", "ReproducciÃ³n TTS iniciada")
                 mainHandler.post { onStartCallback?.invoke() }
             }
 
             override fun onDone(id: String?) {
-                Log.i("TtsManager", "ReproducciÃ³n TTS completada")
                 mainHandler.post { onDoneCallback?.invoke() }
             }
 
             @Deprecated("Deprecated in Java")
             override fun onError(id: String?) {
-                Log.e("TtsManager", "El motor TTS no pudo reproducir el texto")
                 mainHandler.post { onDoneCallback?.invoke() }
             }
         })
 
         try {
-            val cleanStr = cleanTextForSpeech(textToSpeak)
-            val finalStr = if (cleanStr.length > 0) cleanStr else textToSpeak
-            val status = tts?.speak(
-                finalStr,
+            val utteranceId = "DemoniSpeech_${System.currentTimeMillis()}"
+            val params = Bundle().apply {
+                putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId)
+                putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, AudioManager.STREAM_MUSIC)
+            }
+
+            val result = tts?.speak(
+                textToSpeak,
                 TextToSpeech.QUEUE_FLUSH,
-                null,
-                "DemoniSpeech_${System.currentTimeMillis()}"
-            ) ?: TextToSpeech.ERROR
-            if (status != TextToSpeech.SUCCESS) {
-                Log.e("TtsManager", "TTS rechazÃ³ la solicitud de reproducciÃ³n (status=$status)")
+                params,
+                utteranceId
+            )
+            if (result == TextToSpeech.ERROR) {
+                Log.e("TtsManager", "Error en tts.speak para: '$textToSpeak'")
+                onDoneCallback?.invoke()
             }
         } catch (e: Exception) {
             Log.e("TtsManager", "Error ejecutando TTS: ${e.message}")
@@ -120,11 +156,12 @@ class TtsManager(private val context: Context) {
     }
 
     fun destroy() {
+        isTtsReady = false
+        pendingSpeechQueue.clear()
         tts?.let {
             try { it.stop() } catch (_: Exception) {}
             try { it.shutdown() } catch (_: Exception) {}
         }
         tts = null
-        isTtsReady = false
     }
 }

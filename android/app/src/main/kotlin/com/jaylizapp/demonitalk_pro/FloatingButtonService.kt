@@ -21,7 +21,7 @@ import java.util.Locale
 class FloatingButtonService : Service() {
 
     private lateinit var uiManager: FloatingUiManager
-    private lateinit var speechManager: VoskSpeechManager
+    private lateinit var speechManager: DualSpeechManager
     private lateinit var ttsManager: TtsManager
 
     private lateinit var commandHandler: CommandHandler
@@ -93,10 +93,11 @@ class FloatingButtonService : Service() {
         createNotificationChannel()
         startForegroundService()
 
-        repository = CommandRepository(this)
-        aiAssistant = AiAssistant(this)
-        commandHandler = CommandHandler(this)
         ttsManager = TtsManager(this)
+        aiAssistant = AiAssistant(this, ttsManager)
+        repository = CommandRepository(this)
+        commandHandler = CommandHandler(this)
+
 
         uiManager = FloatingUiManager(
             context = this,
@@ -145,16 +146,12 @@ class FloatingButtonService : Service() {
             }
         )
 
-        speechManager = VoskSpeechManager(
+        speechManager = DualSpeechManager(
             context = this,
+            repository = repository,
             onReady = { updateButtonUI() },
             onSpeechResults = { text -> handleSpeechResults(text) },
             onErrorRestart = { scheduleListeningRestart(2000) },
-            onErrorStopWaiting = {
-                cancelWakeTimeout()
-                isWaitingForCommandAfterWake = false
-                updateButtonUI()
-            },
             isModeActive = { isContinuousMode || isVigilanceMode },
             onPartialSpeechResults = null
         )
@@ -242,7 +239,7 @@ class FloatingButtonService : Service() {
                     isWaitingForCommandAfterWake = false
                 }
 
-                if (!wasWaiting && isVigilanceMode && result == CommandHandler.CommandResult.WakeWordOnly) {
+                if (result == CommandHandler.CommandResult.WakeWordOnly) {
                     handleWakeWordResponse()
                     return@withContext
                 }

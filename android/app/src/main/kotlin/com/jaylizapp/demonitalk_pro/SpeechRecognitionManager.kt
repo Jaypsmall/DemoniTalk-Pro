@@ -105,6 +105,24 @@ class SpeechRecognitionManager(
     }
 
     private var preferOnDevice = true
+    private var pendingRestartRunnable: Runnable? = null
+
+    private fun safeRestart(delayMs: Long = 400L) {
+        val r = pendingRestartRunnable
+        if (r != null) {
+            mainHandler.removeCallbacks(r)
+        }
+        val runnable = Runnable {
+            pendingRestartRunnable = null
+            if (isModeActive()) {
+                onErrorRestart()
+            } else {
+                onErrorStopWaiting()
+            }
+        }
+        pendingRestartRunnable = runnable
+        mainHandler.postDelayed(runnable, delayMs)
+    }
 
     private fun setupSpeechRecognizer() {
         if (speechRecognizer != null) return
@@ -114,16 +132,19 @@ class SpeechRecognitionManager(
         }
 
         try {
-            speechRecognizer = if (
+            if (
                 preferOnDevice &&
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-                SpeechRecognizer.isOnDeviceRecognitionAvailable(context.applicationContext)
+                SpeechRecognizer.isOnDeviceRecognitionAvailable(context)
             ) {
-                Log.i("SpeechRecManager", "Usando reconocedor de voz local")
-                SpeechRecognizer.createOnDeviceSpeechRecognizer(context.applicationContext)
+                try {
+                    speechRecognizer = SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
+                } catch (e: Exception) {
+                    Log.w("SpeechRecManager", "OnDeviceSpeechRecognizer falló, usando estándar: ${e.message}")
+                    speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
+                }
             } else {
-                Log.i("SpeechRecManager", "Usando reconocedor de voz estándar")
-                SpeechRecognizer.createSpeechRecognizer(context.applicationContext)
+                speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
             }
             speechRecognizer?.setRecognitionListener(speechListener)
         } catch (e: Exception) {
@@ -150,11 +171,11 @@ class SpeechRecognitionManager(
         @SuppressLint("SwitchIntDef")
         override fun onError(error: Int) {
             if (error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
-                Log.i("SpeechRecManager", "Tiempo de silencio o sin coincidencia (Error $error)")
+                Log.d("SpeechRecManager", "Tiempo de silencio o sin coincidencia (Error $error)")
                 isListening = false
                 if (isModeActive()) {
                     muteAudio(true)
-                    onErrorRestart()
+                    safeRestart(300L)
                 } else {
                     muteAudio(false)
                     onErrorStopWaiting()
@@ -204,9 +225,18 @@ class SpeechRecognitionManager(
                     Thread {
                         try {
                             val pkg = context.packageName
-                            ShellUtils.executeCommand("appops set $pkg RECORD_AUDIO allow")
-                            ShellUtils.executeCommand("appops set $pkg PROJECT_MEDIA allow")
-                            ShellUtils.executeCommand("am force-stop com.google.android.googlequicksearchbox")
+                            val uid = android.os.Process.myUid()
+                            val userId = android.os.Process.myUserHandle().hashCode()
+
+                            ShellUtils.executeCommand("cmd appops set --user $userId $pkg RECORD_AUDIO allow")
+                            ShellUtils.executeCommand("cmd appops set $uid RECORD_AUDIO allow")
+                            ShellUtils.executeCommand("appops set $uid RECORD_AUDIO allow")
+
+                            ShellUtils.executeCommand("cmd appops set --user $userId $pkg PROJECT_MEDIA allow")
+                            ShellUtils.executeCommand("cmd appops set $uid PROJECT_MEDIA allow")
+                            ShellUtils.executeCommand("appops set $uid PROJECT_MEDIA allow")
+
+                            ShellUtils.executeCommand("pm grant $pkg android.permission.RECORD_AUDIO")
                         } catch (e: Exception) {
                             Log.e("SpeechRecManager", "Error recuperación ROOT: ${e.message}")
                         }
@@ -215,7 +245,7 @@ class SpeechRecognitionManager(
             }
 
             if (isModeActive()) {
-                onErrorRestart()
+                safeRestart(500L)
             } else {
                 onErrorStopWaiting()
             }
@@ -237,7 +267,7 @@ class SpeechRecognitionManager(
             } else {
                 Log.w("SpeechRecManager", "⚠️ Se recibió un resultado de voz vacío; no se enviará como comando")
                 if (isModeActive()) {
-                    onErrorRestart()
+                    safeRestart(300L)
                 } else {
                     onErrorStopWaiting()
                 }
@@ -295,7 +325,7 @@ class SpeechRecognitionManager(
             isListening = false
             if (isModeActive()) {
                 muteAudio(true)
-                onErrorRestart()
+                safeRestart(500L)
             } else {
                 muteAudio(false)
             }
@@ -304,6 +334,11 @@ class SpeechRecognitionManager(
 
     fun stopListening() {
         isListening = false
+        val r = pendingRestartRunnable
+        if (r != null) {
+            mainHandler.removeCallbacks(r)
+        }
+        pendingRestartRunnable = null
         try { speechRecognizer?.cancel() } catch (_: Exception) {}
         restoreRecognitionAudio(force = true)
     }

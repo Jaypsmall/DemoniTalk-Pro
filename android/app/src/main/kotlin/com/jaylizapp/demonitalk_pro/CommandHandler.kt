@@ -13,6 +13,18 @@ class CommandHandler(private val context: Context) {
         internalListener = listener
     }
 
+    /**
+     * Normaliza el texto reconocido por voz:
+     * - elimina tildes
+     * - convierte a minúsculas
+     * - elimina espacios sobrantes
+     * - unifica palabras utilizadas como wake word
+     *
+     * IMPORTANTE:
+     * Solo sustituye palabras completas.
+     * Así "demoni" puede convertirse en "maquina",
+     * pero "demonizar" NO se modifica.
+     */
     private fun String.normalize(): String {
         return VoiceTextNormalizer.normalize(this)
     }
@@ -34,18 +46,16 @@ class CommandHandler(private val context: Context) {
 
         Log.i("CommandHandler", "Texto original: '$text' -> normalizado: '$normalizedText'")
 
-        if (requireWakeWord) {
-            val foundWakeWord = wakeWords.firstOrNull { wakeWord ->
-                normalizedText == wakeWord || normalizedText.startsWith("$wakeWord ")
-            }
+        val foundWakeWord = wakeWords.firstOrNull { wakeWord ->
+            normalizedText == wakeWord || normalizedText.startsWith("$wakeWord ")
+        }
 
-            if (foundWakeWord != null) {
-                wakeWordDetected = true
-                normalizedText = normalizedText.removePrefix(foundWakeWord).trim()
-            } else {
-                Log.w("CommandHandler", "Comando ignorado: falta la palabra de activación; se recibió '$normalizedText'")
-                return CommandResult.Ignored
-            }
+        if (foundWakeWord != null) {
+            wakeWordDetected = true
+            normalizedText = normalizedText.removePrefix(foundWakeWord).trim()
+        } else if (requireWakeWord) {
+            Log.w("CommandHandler", "Comando ignorado: falta la palabra de activación; se recibió '$normalizedText'")
+            return CommandResult.Ignored
         }
 
         if (wakeWordDetected && normalizedText.isEmpty()) {

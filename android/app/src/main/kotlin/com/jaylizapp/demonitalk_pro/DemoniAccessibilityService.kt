@@ -8,13 +8,9 @@ import android.graphics.Color
 import android.graphics.Path
 import android.graphics.Rect
 import android.graphics.Typeface
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.speech.RecognitionListener
-import android.speech.RecognizerIntent
-import android.speech.SpeechRecognizer
 import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
@@ -28,7 +24,7 @@ import java.util.Locale
 
 class DemoniAccessibilityService : AccessibilityService() {
 
-    private var speechRecognizer: SpeechRecognizer? = null
+    private lateinit var dualSpeechManager: DualSpeechManager
     private lateinit var commandHandler: CommandHandler
     private lateinit var repository: CommandRepository
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -53,6 +49,19 @@ class DemoniAccessibilityService : AccessibilityService() {
         instance = this
         commandHandler = CommandHandler(this)
         repository = CommandRepository(this)
+        dualSpeechManager = DualSpeechManager(
+            context = this,
+            repository = repository,
+            onReady = { },
+            onSpeechResults = { text ->
+                if (text.isNotBlank()) {
+                    commandHandler.execute(text, repository.loadCommands())
+                }
+            },
+            onErrorRestart = { },
+            isModeActive = { isListening },
+            onPartialSpeechResults = null
+        )
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         Log.d(TAG, "Accessibility Service Connected")
     }
@@ -66,34 +75,12 @@ class DemoniAccessibilityService : AccessibilityService() {
         return super.onStartCommand(intent, flags, startId)
     }
 
-    private var preferOnDevice = true
-
     private fun startListening() {
         mainHandler.post {
             if (isListening) return@post
             try {
-                if (speechRecognizer == null) {
-                    speechRecognizer = if (
-                        preferOnDevice &&
-                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-                        SpeechRecognizer.isOnDeviceRecognitionAvailable(applicationContext)
-                    ) {
-                        SpeechRecognizer.createOnDeviceSpeechRecognizer(applicationContext)
-                    } else {
-                        SpeechRecognizer.createSpeechRecognizer(applicationContext)
-                    }
-                    speechRecognizer?.setRecognitionListener(speechListener)
-                }
-
-                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-                    putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
-                    putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
-                }
-
-                speechRecognizer?.startListening(intent)
                 isListening = true
+                dualSpeechManager.startListening()
             } catch (e: Exception) {
                 Log.e(TAG, "Error starting accessibility listening", e)
             }
@@ -102,45 +89,14 @@ class DemoniAccessibilityService : AccessibilityService() {
 
     private fun stopListening() {
         mainHandler.post {
-            try { speechRecognizer?.stopListening() } catch (_: Exception) {}
             isListening = false
+            try { dualSpeechManager.stopListening() } catch (_: Exception) {}
         }
-    }
-
-    private val speechListener = object : RecognitionListener {
-        override fun onReadyForSpeech(params: Bundle?) {}
-        override fun onBeginningOfSpeech() {}
-        override fun onRmsChanged(rmsdB: Float) {}
-        override fun onBufferReceived(buffer: ByteArray?) {}
-        override fun onEndOfSpeech() { isListening = false }
-        override fun onError(error: Int) {
-            isListening = false
-            if (error == SpeechRecognizer.ERROR_NETWORK || error == SpeechRecognizer.ERROR_NETWORK_TIMEOUT || error == 12) {
-                preferOnDevice = false
-                try {
-                    speechRecognizer?.destroy()
-                } catch (_: Exception) {}
-                speechRecognizer = null
-            }
-        }
-
-        override fun onResults(results: Bundle?) {
-            isListening = false
-            val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-            val text = matches?.firstOrNull { it.isNotBlank() }?.trim()
-            if (!text.isNullOrEmpty()) {
-                commandHandler.execute(text, repository.loadCommands())
-            } else {
-                Log.w(TAG, "Se ignoró un resultado de voz vacío.")
-            }
-        }
-
-        override fun onPartialResults(partialResults: Bundle?) {}
-        override fun onEvent(eventType: Int, params: Bundle?) {}
     }
 
     override fun onUnbind(intent: Intent?): Boolean {
         hideOverlays()
+        try { dualSpeechManager.destroy() } catch (_: Exception) {}
         instance = null
         return super.onUnbind(intent)
     }
