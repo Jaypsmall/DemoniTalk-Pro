@@ -9,11 +9,11 @@
 ¡La versión más potente de **DemoniTalk Pro** reconstruida con **Flutter**, **Kotlin** y **Rust Native Engine**!
 
 <a href="https://github.com/Jaypsmall/DemoniTalk-Pro/releases/download/Rust/DemoniTalk_Pro_v2.0.2.apk">
-<img src="https://img.shields.io/badge/DOWNLOAD_DEMONITALK_PRO_v2.0.2_APK-181717?style=flat&logo=android&logoColor=FFD006" alt="Download Rust Release">
+<img src="https://img.shields.io/badge/DOWNLOAD_DEMONITALK_PRO_v2.0.2_APK-181717?style=flat&logo=android&logoColor=green" alt="Download Rust Release">
 </a>
 
 <a href="https://github.com/Jaypsmall/DemoniTalk-Pro/releases/download/Rust/DemoniTalk_Pro_v2.0.3.apk">
-<img src="https://img.shields.io/badge/DOWNLOAD_DEMONITALK_PRO_v2.0.3_APK-181717?style=flat&logo=android&logoColor=FFD600" alt="Download Rust Release">
+<img src="https://img.shields.io/badge/DOWNLOAD_DEMONITALK_PRO_v2.0.3_APK-181717?style=flat&logo=android&logoColor=green" alt="Download Rust Release">
 </a>
 
 ---
