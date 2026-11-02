@@ -1,4 +1,4 @@
-# 😈 DemoniTalk Pro  ![Flutter](https://img.shields.io/badge/Flutter-181717?style=flat&logo=flutter&logoColor=FFD006) ![Kotlin](https://img.shields.io/badge/Kotlin-181717?style=flat&logo=kotlin&logoColor=FFD006) ![Rust](https://img.shields.io/badge/Rust-181717?style=flat&logo=rust&logoColor=FFD006)
+# 😈 DemoniTalk Pro  ![Kotlin](https://img.shields.io/badge/Kotlin-181717?style=flat&logo=kotlin&logoColor=C81AEE) ![Flutter](https://img.shields.io/badge/Flutter-181717?style=flat&logo=flutter&logoColor=70B9EC) ![Rust](https://img.shields.io/badge/Rust-181717?style=flat&logo=rust&logoColor=F67300)
 
 <p align="center">
   <a href="https://kotlinlang.org" target="_blank"><img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/kotlin/kotlin-original.svg" height="30" alt="Kotlin" /></a> &nbsp;&nbsp;
