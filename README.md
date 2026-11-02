@@ -15,7 +15,7 @@
   <a href="https://flutter.dev" target="_blank"><img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/flutter/flutter-original.svg" height="30" alt="Flutter" /></a> &nbsp;&nbsp;
   <a href="https://www.rust-lang.org" target="_blank"><img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/rust/rust-original.svg" height="30" alt="Rust" /></a> &nbsp;&nbsp;
 
-  <a href="https://www.rust-lang.org" target="_blank"><img src="https://raw.githubusercontent.com/rust-lang/rust-artwork/master/logo/ferris-happy.svg" height="30" alt="Rust" /></a>
+  <a href="https://www.rust-lang.org" target="_blank"><img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/rust/logo/ferris-happy.svg" height="30" alt="Rust" /></a>
 </p>
 
 ---
