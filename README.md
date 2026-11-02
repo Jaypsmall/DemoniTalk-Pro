@@ -44,7 +44,7 @@ demoni_pro/
 
 ---
 
-## ⚡ Rust Native Engine (`demoni_engine`) <a href="https://www.rust-lang.org" target="_blank"><img src="https://rustacean.net/assets/rustacean-flat-happy.svg" height="20" alt="Rust" /></a> 
+## <a href="https://www.rust-lang.org" target="_blank"><img src="https://rustacean.net/assets/rustacean-flat-happy.svg" height="30" alt="Rust" /></a> Rust Native Engine (`demoni_engine`) <a href="https://www.rust-lang.org" target="_blank"><img src="https://rustacean.net/assets/rustacean-flat-happy.svg" height="30" alt="Rust" /></a> 
 
 El motor nativo escrito en **Rust** proporciona procesamiento de voz y coincidencia de comandos con latencia inferior a 1 ms:
 
