@@ -3,7 +3,7 @@
 <p align="center">
   <a href="https://kotlinlang.org" target="_blank"><img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/kotlin/kotlin-original.svg" height="30" alt="Kotlin" /></a> &nbsp;&nbsp;
   <a href="https://flutter.dev" target="_blank"><img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/flutter/flutter-original.svg" height="30" alt="Flutter" /></a> &nbsp;&nbsp;
-  <a href="https://www.rust-lang.org" target="_blank"><img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/rust/rust-original.svg" height="40" alt="Rust" /></a>
+  <a href="https://www.rust-lang.org" target="_blank"><img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/rust/rust-original.svg" height="30" alt="Rust" /></a>
 </p>
 
 ¡La versión más potente de **DemoniTalk Pro** reconstruida con **Flutter**, **Kotlin** y **Rust Native Engine**!
@@ -12,8 +12,8 @@
 <img src="https://img.shields.io/badge/DOWNLOAD_DEMONITALK_PRO_v2.0.2_APK-181717?style=flat&logo=android&logoColor=FFD006" alt="Download Rust Release">
 </a>
 
-<a href="https://github.com/Jaypsmall/DemoniTalk-Pro/releases/download/Rust/DemoniTalk_Pro_v2.0.5.apk">
-<img src="https://img.shields.io/badge/DOWNLOAD_DEMONITALK_PRO_v2.0.5_APK-181717?style=flat&logo=android&logoColor=FFD600" alt="Download Rust Release">
+<a href="https://github.com/Jaypsmall/DemoniTalk-Pro/releases/download/Rust/DemoniTalk_Pro_v2.0.3.apk">
+<img src="https://img.shields.io/badge/DOWNLOAD_DEMONITALK_PRO_v2.0.3_APK-181717?style=flat&logo=android&logoColor=FFD600" alt="Download Rust Release">
 </a>
 
 ---
