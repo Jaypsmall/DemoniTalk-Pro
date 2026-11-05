@@ -26,21 +26,36 @@ class TtsManager(private val context: Context) {
     private fun createTtsInstance() {
         if (tts != null) return
         try {
-            var initialized = false
+            var created = false
             try {
                 tts = TextToSpeech(context, { status ->
                     mainHandler.post {
                         handleTtsInit(status)
                     }
                 }, "com.google.android.tts")
-                initialized = true
+                created = true
             } catch (_: Exception) {}
 
-            if (!initialized || tts == null) {
-                tts = TextToSpeech(context) { status ->
-                    mainHandler.post {
-                        handleTtsInit(status)
+            if (!created || tts == null) {
+                try {
+                    tts = TextToSpeech(context, { status ->
+                        mainHandler.post {
+                            handleTtsInit(status)
+                        }
+                    }, "com.samsung.SMT")
+                    created = true
+                } catch (_: Exception) {}
+            }
+
+            if (!created || tts == null) {
+                try {
+                    tts = TextToSpeech(context) { status ->
+                        mainHandler.post {
+                            handleTtsInit(status)
+                        }
                     }
+                } catch (e: Exception) {
+                    Log.e("TtsManager", "Fallo al crear TextToSpeech predeterminado: ${e.message}")
                 }
             }
         } catch (e: Exception) {

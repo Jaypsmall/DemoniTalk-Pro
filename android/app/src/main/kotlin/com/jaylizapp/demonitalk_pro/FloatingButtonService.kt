@@ -77,6 +77,15 @@ class FloatingButtonService : Service() {
             }
 
             "ACTION_MODE_RED" -> stopEverything()
+            "ACTION_START_SECRET_LISTENING" -> {
+                repository.saveSecretMode(true)
+                stopPendingRestart()
+                startListening()
+            }
+            "ACTION_STOP_SECRET_LISTENING" -> {
+                repository.saveSecretMode(false)
+                stopEverything()
+            }
             "ACTION_STOP_SERVICE" -> {
                 stopEverything()
                 stopSelf()
@@ -93,6 +102,9 @@ class FloatingButtonService : Service() {
         createNotificationChannel()
         startForegroundService()
 
+        if (::ttsManager.isInitialized) {
+            ttsManager.destroy()
+        }
         ttsManager = TtsManager(this)
         aiAssistant = AiAssistant(this, ttsManager)
         repository = CommandRepository(this)
@@ -189,6 +201,9 @@ class FloatingButtonService : Service() {
                     }
 
                     "internal_secret_mode" -> {
+                        repository.saveSecretMode(true)
+                        stopPendingRestart()
+                        startListening()
                         try {
                             val intent = Intent(this, MainActivity::class.java).apply {
                                 this.action = "ACTION_OPEN_SECRET_MODE"

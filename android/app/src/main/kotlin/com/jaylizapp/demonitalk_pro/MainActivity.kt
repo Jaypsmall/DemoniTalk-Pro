@@ -225,6 +225,15 @@ class MainActivity : FlutterActivity() {
                 "saveSecretMode" -> {
                     val active = call.argument<Boolean>("active") ?: false
                     repository.saveSecretMode(active)
+                    val action = if (active) "ACTION_START_SECRET_LISTENING" else "ACTION_STOP_SECRET_LISTENING"
+                    val intent = Intent(this, FloatingButtonService::class.java).apply {
+                        this.action = action
+                    }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        startForegroundService(intent)
+                    } else {
+                        startService(intent)
+                    }
                     result.success(true)
                 }
 
