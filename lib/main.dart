@@ -533,6 +533,10 @@ class _CommandScreenState extends State<CommandScreen> {
                   text: _isEnglish ? "START FLOATING" : "INICIAR BOTÓN",
                   color: Theme.of(context).colorScheme.primary,
                   onPressed: () async {
+                    final hasMic = await NativeBridge.hasAudioPermission();
+                    if (!hasMic) {
+                      await NativeBridge.checkAndRequestAudioPermission();
+                    }
                     final canDraw = await NativeBridge.canDrawOverlays();
                     if (canDraw) {
                       await NativeBridge.startFloatingService();

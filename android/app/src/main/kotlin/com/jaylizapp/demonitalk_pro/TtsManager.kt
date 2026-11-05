@@ -26,40 +26,56 @@ class TtsManager(private val context: Context) {
     private fun createTtsInstance() {
         if (tts != null) return
         try {
-            tts = TextToSpeech(context) { status ->
-                mainHandler.post {
-                    if (status == TextToSpeech.SUCCESS) {
-                        try {
-                            var result = tts?.setLanguage(Locale.forLanguageTag("es-ES"))
-                            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                                result = tts?.setLanguage(Locale.forLanguageTag("es"))
-                            }
-                            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                                tts?.setLanguage(Locale.getDefault())
-                            }
+            var initialized = false
+            try {
+                tts = TextToSpeech(context, { status ->
+                    mainHandler.post {
+                        handleTtsInit(status)
+                    }
+                }, "com.google.android.tts")
+                initialized = true
+            } catch (_: Exception) {}
 
-                            val audioAttributes = AudioAttributes.Builder()
-                                .setUsage(AudioAttributes.USAGE_MEDIA)
-                                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                                .build()
-                            tts?.setAudioAttributes(audioAttributes)
-
-                            isTtsReady = true
-                            Log.i("TtsManager", "TTS inicializado correctamente en español")
-                            flushPendingQueue()
-                        } catch (e: Exception) {
-                            isTtsReady = false
-                            Log.e("TtsManager", "Error configurando TTS: ${e.message}")
-                        }
-                    } else {
-                        isTtsReady = false
-                        Log.e("TtsManager", "No se pudo inicializar TextToSpeech (status=$status)")
+            if (!initialized || tts == null) {
+                tts = TextToSpeech(context) { status ->
+                    mainHandler.post {
+                        handleTtsInit(status)
                     }
                 }
             }
         } catch (e: Exception) {
             isTtsReady = false
             Log.e("TtsManager", "Error creando instancia TextToSpeech: ${e.message}")
+        }
+    }
+
+    private fun handleTtsInit(status: Int) {
+        if (status == TextToSpeech.SUCCESS) {
+            try {
+                var result = tts?.setLanguage(Locale.forLanguageTag("es-ES"))
+                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    result = tts?.setLanguage(Locale.forLanguageTag("es"))
+                }
+                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    tts?.setLanguage(Locale.getDefault())
+                }
+
+                val audioAttributes = AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build()
+                tts?.setAudioAttributes(audioAttributes)
+
+                isTtsReady = true
+                Log.i("TtsManager", "TTS inicializado correctamente en español")
+                flushPendingQueue()
+            } catch (e: Exception) {
+                isTtsReady = false
+                Log.e("TtsManager", "Error configurando TTS: ${e.message}")
+            }
+        } else {
+            isTtsReady = false
+            Log.e("TtsManager", "No se pudo inicializar TextToSpeech (status=$status)")
         }
     }
 
