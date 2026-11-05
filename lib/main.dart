@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'conversador_gordo.dart';
+import 'demoni_avatar_widget.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -258,6 +260,33 @@ class NativeBridge {
     }
   }
 
+  static Future<bool> isSecretRequested() async {
+    try {
+      final bool? result = await platform.invokeMethod<bool>('isSecretRequested');
+      return result ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<bool> speakText(String text) async {
+    try {
+      final bool? result = await platform.invokeMethod<bool>('speakText', {'text': text});
+      return result ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<bool> saveSecretMode(bool active) async {
+    try {
+      final bool? result = await platform.invokeMethod<bool>('saveSecretMode', {'active': active});
+      return result ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   static Future<String?> pickJsonFile() async {
     return platform.invokeMethod<String>('pickJsonFile');
   }
@@ -289,12 +318,64 @@ class _CommandScreenState extends State<CommandScreen> {
   List<Map<String, dynamic>> _commands = [];
   bool _isEnglish = false;
   String _searchFilter = '';
+  bool _isSecretMode = false;
+  int _titleTapCount = 0;
+
+  final ConversadorGordo _conversador = ConversadorGordo();
+  final TextEditingController _demonTalkController = TextEditingController();
+  String _demonLastInput = '';
+  String _demonLastReply = '¡Hola, hermano! Soy Demoni. Dime lo que quieras y te respondo con toda la solera.';
+
+  void _setSecretMode(bool active) {
+    setState(() {
+      _isSecretMode = active;
+    });
+    NativeBridge.saveSecretMode(active);
+  }
+
+  void _talkToDemon(String text) {
+    final cleanText = text.trim();
+    if (cleanText.isEmpty) return;
+    final reply = _conversador.procesar(cleanText);
+    setState(() {
+      _demonLastInput = cleanText;
+      _demonLastReply = reply;
+    });
+    _demonTalkController.clear();
+    NativeBridge.speakText(reply);
+  }
 
   @override
   void initState() {
     super.initState();
     _reloadCommands();
     NativeBridge.checkAndRequestAudioPermission();
+    _checkSecretRequested();
+
+    NativeBridge.platform.setMethodCallHandler((call) async {
+      if (call.method == 'openSecretMode') {
+        if (mounted) {
+          _setSecretMode(true);
+        }
+      } else if (call.method == 'onSecretDemonSpeech') {
+        final args = Map<String, dynamic>.from(call.arguments as Map);
+        final input = args['input']?.toString() ?? '';
+        final response = args['response']?.toString() ?? '';
+        if (mounted) {
+          setState(() {
+            _demonLastInput = input;
+            _demonLastReply = response;
+          });
+        }
+      }
+    });
+  }
+
+  Future<void> _checkSecretRequested() async {
+    final requested = await NativeBridge.isSecretRequested();
+    if (requested && mounted) {
+      _setSecretMode(true);
+    }
   }
 
   Future<void> _reloadCommands() async {
@@ -322,25 +403,35 @@ class _CommandScreenState extends State<CommandScreen> {
   }
 
   Widget _buildTitle() {
-    return RichText(
-      text: TextSpan(
-        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-        children: [
-          const TextSpan(
-            text: "De",
-            style: TextStyle(color: _DemoniTalkAppState.hellRed),
-          ),
-          const TextSpan(
-            text: "moni",
-            style: TextStyle(color: _DemoniTalkAppState.brimstoneYellow),
-          ),
-          TextSpan(
-            text: "Talk Pro 😈",
-            style: TextStyle(
-              color: widget.isDarkMode ? Colors.white : Colors.black87,
+    return GestureDetector(
+      onTap: () {
+        _titleTapCount++;
+        if (_titleTapCount >= 5) {
+          _titleTapCount = 0;
+          _setSecretMode(!_isSecretMode);
+          _showSnackBar(_isSecretMode ? "🔥 PORTAL DEMONÍACO INVOCADO 🔥" : "Portal cerrado");
+        }
+      },
+      child: RichText(
+        text: TextSpan(
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+          children: [
+            const TextSpan(
+              text: "De",
+              style: TextStyle(color: _DemoniTalkAppState.hellRed),
             ),
-          ),
-        ],
+            const TextSpan(
+              text: "moni",
+              style: TextStyle(color: _DemoniTalkAppState.brimstoneYellow),
+            ),
+            TextSpan(
+              text: "Talk Pro 😈",
+              style: TextStyle(
+                color: widget.isDarkMode ? Colors.white : Colors.black87,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -348,11 +439,15 @@ class _CommandScreenState extends State<CommandScreen> {
   @override
   Widget build(BuildContext context) {
     final filteredCommands = _commands.where((cmd) {
+      final action = (cmd['action'] ?? '').toString();
+      final trigger = (cmd['trigger'] ?? '').toString().toLowerCase();
+      // Ocualtar comandos de modo secreto de las tarjetas publicas
+      if (action == 'internal_secret_mode' || trigger == 'pacto secreto' || trigger == 'invocar demonio' || trigger == 'modo secreto') {
+        return false;
+      }
       if (_searchFilter.isEmpty) return true;
-      final t = (cmd['trigger'] ?? '').toString().toLowerCase();
-      final a = (cmd['action'] ?? '').toString().toLowerCase();
       final query = _searchFilter.toLowerCase();
-      return t.contains(query) || a.contains(query);
+      return trigger.contains(query) || action.toLowerCase().contains(query);
     }).toList();
 
     return Scaffold(
@@ -385,166 +480,393 @@ class _CommandScreenState extends State<CommandScreen> {
         ),
       ),
       drawer: _buildDrawer(context),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: _DemoniTalkAppState.hellRed,
-        foregroundColor: Colors.white,
-        elevation: 8,
-        onPressed: () => _openAddEditDialog(),
-        child: const Icon(Icons.add, size: 28),
-      ),
-      body: Column(
-        children: [
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildDemoniButton(
-                    text: _isEnglish ? "(ACCESSIBILITY)" : "(ACCESIBILIDAD)",
-                    color: _DemoniTalkAppState.demoniPurple,
-                    onPressed: () async {
-                      final enabled = await NativeBridge.isAccessibilityEnabled();
-                      if (!enabled) {
-                        _showSnackBar(_isEnglish
-                            ? "Enable DemoniTalk in Accessibility"
-                            : "Habilita DemoniTalk en Accesibilidad");
-                        await NativeBridge.openAccessibilitySettings();
-                      } else {
-                        _showSnackBar(_isEnglish
-                            ? "Accessibility already enabled 😈"
-                            : "Accesibilidad ya activada 😈");
-                      }
-                    },
-                  ),
-                ),
-              ],
+      floatingActionButton: _isSecretMode
+          ? null
+          : FloatingActionButton(
+              backgroundColor: _DemoniTalkAppState.hellRed,
+              foregroundColor: Colors.white,
+              elevation: 8,
+              onPressed: () => _openAddEditDialog(),
+              child: const Icon(Icons.add, size: 28),
             ),
+      body: _isSecretMode ? _buildSecretDemonScreen(context) : _buildStandardScreen(filteredCommands),
+    );
+  }
+
+  Widget _buildStandardScreen(List<Map<String, dynamic>> filteredCommands) {
+    return Column(
+      children: [
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Row(
+            children: [
+              Expanded(
+                child: _buildDemoniButton(
+                  text: _isEnglish ? "(ACCESSIBILITY)" : "(ACCESIBILIDAD)",
+                  color: _DemoniTalkAppState.demoniPurple,
+                  onPressed: () async {
+                    final enabled = await NativeBridge.isAccessibilityEnabled();
+                    if (!enabled) {
+                      _showSnackBar(_isEnglish
+                          ? "Enable DemoniTalk in Accessibility"
+                          : "Habilita DemoniTalk en Accesibilidad");
+                      await NativeBridge.openAccessibilitySettings();
+                    } else {
+                      _showSnackBar(_isEnglish
+                          ? "Accessibility already enabled 😈"
+                          : "Accesibilidad ya activada 😈");
+                    }
+                  },
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 6),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: Row(
+        ),
+        const SizedBox(height: 6),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Row(
+            children: [
+              Expanded(
+                child: _buildDemoniButton(
+                  text: _isEnglish ? "START FLOATING" : "INICIAR BOTÓN",
+                  color: Theme.of(context).colorScheme.primary,
+                  onPressed: () async {
+                    final canDraw = await NativeBridge.canDrawOverlays();
+                    if (canDraw) {
+                      await NativeBridge.startFloatingService();
+                      _showSnackBar(_isEnglish
+                          ? "Floating button active 😈"
+                          : "Botón flotante activo 😈");
+                    } else {
+                      _showSnackBar(_isEnglish
+                          ? "Grant overlay permission"
+                          : "Concede el permiso para mostrar sobre otras apps");
+                      await NativeBridge.openOverlaySettings();
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildDemoniButton(
+                  text: _isEnglish ? "REQUEST ROOT" : "SOLICITAR ROOT",
+                  color: Colors.redAccent.shade700,
+                  onPressed: () async {
+                    _showSnackBar(_isEnglish ? "Checking Root..." : "Verificando Root...");
+                    final granted = await NativeBridge.requestRoot();
+                    _showSnackBar(granted
+                        ? (_isEnglish ? "Root Granted! 😈" : "¡Root Concedido! 😈")
+                        : (_isEnglish ? "Root Denied" : "Root Denegado / No disponible"));
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Card(
+          margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: _DemoniTalkAppState.hellRed.withValues(alpha: 0.3)),
+          ),
+          color: widget.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+          elevation: 4,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: _buildDemoniButton(
-                    text: _isEnglish ? "START FLOATING" : "INICIAR BOTÓN",
+                Text(
+                  _isEnglish ? "QUICK ACTIONS" : "ACCIONES RÁPIDAS",
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
                     color: Theme.of(context).colorScheme.primary,
-                    onPressed: () async {
-                      final canDraw = await NativeBridge.canDrawOverlays();
-                      if (canDraw) {
-                        await NativeBridge.startFloatingService();
-                        _showSnackBar(_isEnglish
-                            ? "Floating button active 😈"
-                            : "Botón flotante activo 😈");
-                      } else {
-                        _showSnackBar(_isEnglish
-                            ? "Grant overlay permission"
-                            : "Concede el permiso para mostrar sobre otras apps");
-                        await NativeBridge.openOverlaySettings();
-                      }
-                    },
+                    letterSpacing: 1.0,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildDemoniButton(
-                    text: _isEnglish ? "REQUEST ROOT" : "SOLICITAR ROOT",
-                    color: Colors.redAccent.shade700,
-                    onPressed: () async {
-                      _showSnackBar(_isEnglish ? "Checking Root..." : "Verificando Root...");
-                      final granted = await NativeBridge.requestRoot();
-                      _showSnackBar(granted
-                          ? (_isEnglish ? "Root Granted! 😈" : "¡Root Concedido! 😈")
-                          : (_isEnglish ? "Root Denied" : "Root Denegado / No disponible"));
-                    },
-                  ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildControlCircle(_DemoniTalkAppState.brimstoneYellow, () {
+                      NativeBridge.sendControlIntent("ACTION_MODE_YELLOW");
+                      _showSnackBar("Modo Amarillo Activado");
+                    }),
+                    _buildControlCircle(Colors.blue, () {
+                      NativeBridge.sendControlIntent("ACTION_MODE_BLUE");
+                      _showSnackBar("Modo Azul Activado (Vigilancia)");
+                    }),
+                    _buildControlCircle(Colors.green, () {
+                      NativeBridge.sendControlIntent("ACTION_MODE_GREEN");
+                      _showSnackBar("Modo Verde Activado (Escucha Continua)");
+                    }),
+                    _buildControlCircle(_DemoniTalkAppState.hellRed, () {
+                      NativeBridge.sendControlIntent("ACTION_MODE_RED");
+                      _showSnackBar("Detenido");
+                    }),
+                  ],
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 8),
-          Card(
-            margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: _DemoniTalkAppState.hellRed.withValues(alpha: 0.3)),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+          child: TextField(
+            decoration: InputDecoration(
+              hintText: _isEnglish ? "Filter commands..." : "Buscar comando...",
+              prefixIcon: const Icon(Icons.search, size: 20),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            color: widget.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-            elevation: 4,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _isEnglish ? "QUICK ACTIONS" : "ACCIONES RÁPIDAS",
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
-                      letterSpacing: 1.0,
-                    ),
+            onChanged: (val) {
+              final cleanVal = val.trim().toLowerCase();
+              if (cleanVal == "pacto secreto" || cleanVal == "invocar demonio" || cleanVal == "modo secreto") {
+                _setSecretMode(true);
+                setState(() {
+                  _searchFilter = '';
+                });
+                _showSnackBar("🔥 PORTAL DEMONÍACO INVOCADO 🔥");
+                return;
+              }
+              setState(() {
+                _searchFilter = val;
+              });
+            },
+          ),
+        ),
+        Expanded(
+          child: filteredCommands.isEmpty
+              ? Center(
+                  child: Text(
+                    _isEnglish ? "No commands found." : "No hay comandos registrados.",
+                    style: const TextStyle(color: Colors.grey),
                   ),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildControlCircle(_DemoniTalkAppState.brimstoneYellow, () {
-                        NativeBridge.sendControlIntent("ACTION_MODE_YELLOW");
-                        _showSnackBar("Modo Amarillo Activado");
-                      }),
-                      _buildControlCircle(Colors.blue, () {
-                        NativeBridge.sendControlIntent("ACTION_MODE_BLUE");
-                        _showSnackBar("Modo Azul Activado (Vigilancia)");
-                      }),
-                      _buildControlCircle(Colors.green, () {
-                        NativeBridge.sendControlIntent("ACTION_MODE_GREEN");
-                        _showSnackBar("Modo Verde Activado (Escucha Continua)");
-                      }),
-                      _buildControlCircle(_DemoniTalkAppState.hellRed, () {
-                        NativeBridge.sendControlIntent("ACTION_MODE_RED");
-                        _showSnackBar("Detenido");
-                      }),
-                    ],
-                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.only(bottom: 80, top: 4),
+                  itemCount: filteredCommands.length,
+                  itemBuilder: (context, index) {
+                    final cmd = filteredCommands[index];
+                    return _buildCommandCard(cmd);
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSecretDemonScreen(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [
+                  _DemoniTalkAppState.demoniPurple,
+                  _DemoniTalkAppState.hellRed,
+                  _DemoniTalkAppState.brimstoneYellow,
                 ],
               ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: _DemoniTalkAppState.demoniPurple.withValues(alpha: 0.6),
+                  blurRadius: 14,
+                  spreadRadius: 2,
+                ),
+              ],
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: _isEnglish ? "Filter commands..." : "Buscar comando...",
-                prefixIcon: const Icon(Icons.search, size: 20),
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              onChanged: (val) {
-                setState(() {
-                  _searchFilter = val;
-                });
-              },
-            ),
-          ),
-          Expanded(
-            child: filteredCommands.isEmpty
-                ? Center(
-                    child: Text(
-                      _isEnglish ? "No commands found." : "No hay comandos registrados.",
-                      style: const TextStyle(color: Colors.grey),
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.only(bottom: 80, top: 4),
-                    itemCount: filteredCommands.length,
-                    itemBuilder: (context, index) {
-                      final cmd = filteredCommands[index];
-                      return _buildCommandCard(cmd);
-                    },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(Icons.local_fire_department, color: Colors.white, size: 24),
+                SizedBox(width: 8),
+                Text(
+                  "PORTAL DEMONÍACO INVOCADO",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                    letterSpacing: 1.2,
                   ),
+                ),
+                SizedBox(width: 8),
+                Icon(Icons.local_fire_department, color: Colors.white, size: 24),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: const Color(0xFF0D021A),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: _DemoniTalkAppState.demoniPurple,
+                width: 3,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: _DemoniTalkAppState.demoniPurple.withValues(alpha: 0.6),
+                  blurRadius: 22,
+                  spreadRadius: 4,
+                ),
+                BoxShadow(
+                  color: _DemoniTalkAppState.hellRed.withValues(alpha: 0.4),
+                  blurRadius: 32,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                const DemoniAvatarWidget(width: 170, height: 170),
+                const SizedBox(height: 12),
+                const Text(
+                  "DEMONI AVATAR",
+                  style: TextStyle(
+                    color: _DemoniTalkAppState.brimstoneYellow,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 18,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                if (_demonLastInput.isNotEmpty) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white10,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _DemoniTalkAppState.hellRed.withValues(alpha: 0.5)),
+                    ),
+                    child: Text(
+                      "Tú: $_demonLastInput",
+                      style: const TextStyle(color: Colors.white70, fontSize: 12, fontStyle: FontStyle.italic),
+                    ),
+                  ),
+                ],
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _DemoniTalkAppState.demoniPurple.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: _DemoniTalkAppState.brimstoneYellow.withValues(alpha: 0.6)),
+                  ),
+                  child: Text(
+                    _demonLastReply,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _demonTalkController,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: InputDecoration(
+                    hintText: "Escribe al Demonio...",
+                    hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
+                    isDense: true,
+                    fillColor: const Color(0xFF1E1030),
+                    filled: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: _DemoniTalkAppState.demoniPurple),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: _DemoniTalkAppState.demoniPurple.withValues(alpha: 0.5)),
+                    ),
+                  ),
+                  onSubmitted: (val) => _talkToDemon(val),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton.filled(
+                style: IconButton.styleFrom(
+                  backgroundColor: _DemoniTalkAppState.demoniPurple,
+                  padding: const EdgeInsets.all(12),
+                ),
+                icon: const Icon(Icons.send, color: Colors.white, size: 20),
+                onPressed: () => _talkToDemon(_demonTalkController.text),
+              ),
+              const SizedBox(width: 4),
+              IconButton.filled(
+                style: IconButton.styleFrom(
+                  backgroundColor: _DemoniTalkAppState.hellRed,
+                  padding: const EdgeInsets.all(12),
+                ),
+                icon: const Icon(Icons.mic, color: _DemoniTalkAppState.brimstoneYellow, size: 20),
+                onPressed: () {
+                  NativeBridge.sendControlIntent("ACTION_MODE_YELLOW");
+                  _showSnackBar("Escuchando al Amo 😈");
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildControlCircle(_DemoniTalkAppState.brimstoneYellow, () {
+                NativeBridge.sendControlIntent("ACTION_MODE_YELLOW");
+                _showSnackBar("Modo Amarillo Activado");
+              }),
+              _buildControlCircle(Colors.blue, () {
+                NativeBridge.sendControlIntent("ACTION_MODE_BLUE");
+                _showSnackBar("Modo Azul Activado (Vigilancia)");
+              }),
+              _buildControlCircle(Colors.green, () {
+                NativeBridge.sendControlIntent("ACTION_MODE_GREEN");
+                _showSnackBar("Modo Verde Activado (Escucha Continua)");
+              }),
+              _buildControlCircle(_DemoniTalkAppState.hellRed, () {
+                NativeBridge.sendControlIntent("ACTION_MODE_RED");
+                _showSnackBar("Detenido");
+              }),
+            ],
+          ),
+          const SizedBox(height: 20),
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _DemoniTalkAppState.hellRed,
+              side: const BorderSide(color: _DemoniTalkAppState.hellRed, width: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+            icon: const Icon(Icons.close),
+            label: const Text(
+              "CERRAR PORTAL (VOLVER A COMANDOS)",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+            ),
+            onPressed: () {
+              _setSecretMode(false);
+            },
           ),
         ],
       ),

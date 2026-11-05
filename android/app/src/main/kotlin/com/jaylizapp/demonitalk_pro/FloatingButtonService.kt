@@ -187,6 +187,18 @@ class FloatingButtonService : Service() {
                         updateButtonUI()
                         startListening()
                     }
+
+                    "internal_secret_mode" -> {
+                        try {
+                            val intent = Intent(this, MainActivity::class.java).apply {
+                                this.action = "ACTION_OPEN_SECRET_MODE"
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+                            }
+                            startActivity(intent)
+                        } catch (e: Exception) {
+                            Log.e("FloatingButtonService", "Error abriendo Secret Mode: ${e.message}")
+                        }
+                    }
                 }
             }
         }
@@ -220,6 +232,28 @@ class FloatingButtonService : Service() {
             val wasWaiting = isWaitingForCommandAfterWake
 
             cancelWakeTimeout()
+
+            if (repository.isSecretMode()) {
+                val cleanPrompt = cleanPromptForAi(lowerText)
+                val promptToProcess = if (cleanPrompt.isNotBlank()) cleanPrompt else text
+                Log.i("DemoniTalk", "Modo Secreto activo; procesando con ConversadorGordo: '$promptToProcess'")
+                val response = ConversadorGordo.procesar(promptToProcess)
+
+                withContext(Dispatchers.Main) {
+                    if (wasWaiting) {
+                        isWaitingForCommandAfterWake = false
+                    }
+                    ttsManager.speakText(response) {
+                        if (!isServiceDestroyed && (isContinuousMode || isVigilanceMode)) {
+                            scheduleListeningRestart(500)
+                        } else {
+                            updateButtonUI()
+                        }
+                    }
+                    MainActivity.notifySecretDemonSpeech(promptToProcess, response)
+                }
+                return@launch
+            }
 
             val result = try {
                 commandHandler.execute(

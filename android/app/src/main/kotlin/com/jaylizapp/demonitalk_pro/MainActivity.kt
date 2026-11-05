@@ -20,18 +20,23 @@ class MainActivity : FlutterActivity() {
     private val IMPORT_JSON_REQUEST_CODE = 102
     private val EXPORT_JSON_REQUEST_CODE = 103
     private lateinit var repository: CommandRepository
+    private var ttsManager: TtsManager? = null
     private var pendingJsonResult: MethodChannel.Result? = null
     private var pendingJsonExport: String? = null
+    private var methodChannel: MethodChannel? = null
+    private var pendingSecretModeRequest = false
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
         repository = CommandRepository(this)
 
-        // Request audio recording permission on startup if not already granted
         checkAndRequestAudioPermission()
 
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
+        val channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
+        methodChannel = channel
+        activeChannel = channel
+        channel.setMethodCallHandler { call, result ->
             when (call.method) {
                 "checkAndRequestAudioPermission" -> {
                     val granted = checkAndRequestAudioPermission()
@@ -200,10 +205,55 @@ class MainActivity : FlutterActivity() {
                     result.success(true)
                 }
 
+                "speakText" -> {
+                    val text = call.argument<String>("text") ?: ""
+                    if (text.isNotBlank()) {
+                        if (ttsManager == null) {
+                            ttsManager = TtsManager(this)
+                        }
+                        ttsManager?.speakText(text)
+                    }
+                    result.success(true)
+                }
+
+                "isSecretRequested" -> {
+                    val requested = pendingSecretModeRequest || intent?.action == "ACTION_OPEN_SECRET_MODE"
+                    pendingSecretModeRequest = false
+                    result.success(requested)
+                }
+
+                "saveSecretMode" -> {
+                    val active = call.argument<Boolean>("active") ?: false
+                    repository.saveSecretMode(active)
+                    result.success(true)
+                }
+
                 else -> {
                     result.notImplemented()
                 }
             }
+        }
+    }
+
+    companion object {
+        private var activeChannel: MethodChannel? = null
+
+        fun notifySecretDemonSpeech(input: String, response: String) {
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                activeChannel?.invokeMethod(
+                    "onSecretDemonSpeech",
+                    mapOf("input" to input, "response" to response)
+                )
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (intent.action == "ACTION_OPEN_SECRET_MODE") {
+            methodChannel?.invokeMethod("openSecretMode", null)
+                ?: run { pendingSecretModeRequest = true }
         }
     }
 

@@ -15,6 +15,7 @@ class CommandRepository(private val context: Context) {
     private val AI_ENABLED_KEY = "ai_enabled"
     private val EXECUTION_MODE_KEY = "execution_mode"
     private val SPEECH_ENGINE_KEY = "speech_engine"
+    private val SECRET_MODE_KEY = "is_secret_mode"
     private val GEMINI_ENGINE_ENABLED_KEY = "gemini_engine_enabled"
     private val FREE_AI_ENGINE_ENABLED_KEY = "free_ai_engine_enabled"
     private val AI_INSTRUCTIONS_KEY = "ai_instructions"
@@ -71,6 +72,14 @@ class CommandRepository(private val context: Context) {
 
     fun getSpeechEngine(): String {
         return prefs.getString(SPEECH_ENGINE_KEY, "VOSK") ?: "VOSK"
+    }
+
+    fun saveSecretMode(active: Boolean) {
+        prefs.edit { putBoolean(SECRET_MODE_KEY, active) }
+    }
+
+    fun isSecretMode(): Boolean {
+        return prefs.getBoolean(SECRET_MODE_KEY, false)
     }
 
     fun saveGeminiEngineEnabled(enabled: Boolean) {
@@ -208,6 +217,9 @@ class CommandRepository(private val context: Context) {
             VoiceCommand("desactivar escucha", "internal_stop"),
             VoiceCommand("activa c4", "internal_mode_blue"),
             VoiceCommand("modo azul", "internal_mode_blue"),
+            VoiceCommand("pacto secreto", "internal_secret_mode"),
+            VoiceCommand("invocar demonio", "internal_secret_mode"),
+            VoiceCommand("modo secreto", "internal_secret_mode"),
             VoiceCommand("encender foco", "torch_on"),
             VoiceCommand("apagar foco", "torch_off"),
             VoiceCommand("primer chat", "click_first_chat"),
