@@ -236,20 +236,24 @@ class FloatingButtonService : Service() {
             if (repository.isSecretMode()) {
                 val cleanPrompt = cleanPromptForAi(lowerText)
                 val promptToProcess = if (cleanPrompt.isNotBlank()) cleanPrompt else text
-                Log.i("DemoniTalk", "Modo Secreto activo; procesando con ConversadorGordo: '$promptToProcess'")
+                Log.i("DemoniTalk", "🔥 MODO SECRETO ACTIVO: Procesando instantáneamente con ConversadorGordo: '$promptToProcess'")
                 val response = ConversadorGordo.procesar(promptToProcess)
 
                 withContext(Dispatchers.Main) {
                     if (wasWaiting) {
                         isWaitingForCommandAfterWake = false
                     }
-                    ttsManager.speakText(response) {
-                        if (!isServiceDestroyed && (isContinuousMode || isVigilanceMode)) {
-                            scheduleListeningRestart(500)
-                        } else {
-                            updateButtonUI()
+                    ttsManager.speakText(
+                        textToSpeak = response,
+                        onStartCallback = {
+                            speechManager.stopListening()
+                        },
+                        onDoneCallback = {
+                            if (!isServiceDestroyed) {
+                                scheduleListeningRestart(150)
+                            }
                         }
-                    }
+                    )
                     MainActivity.notifySecretDemonSpeech(promptToProcess, response)
                 }
                 return@launch

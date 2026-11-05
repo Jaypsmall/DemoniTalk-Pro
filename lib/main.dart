@@ -667,46 +667,7 @@ class _CommandScreenState extends State<CommandScreen> {
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [
-                  _DemoniTalkAppState.demoniPurple,
-                  _DemoniTalkAppState.hellRed,
-                  _DemoniTalkAppState.brimstoneYellow,
-                ],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: _DemoniTalkAppState.demoniPurple.withValues(alpha: 0.6),
-                  blurRadius: 14,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                Icon(Icons.local_fire_department, color: Colors.white, size: 24),
-                SizedBox(width: 8),
-                Text(
-                  "PORTAL DEMONÍACO INVOCADO",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 14,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                SizedBox(width: 8),
-                Icon(Icons.local_fire_department, color: Colors.white, size: 24),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             width: double.infinity,
             decoration: BoxDecoration(
               color: const Color(0xFF0D021A),
@@ -730,128 +691,32 @@ class _CommandScreenState extends State<CommandScreen> {
             ),
             child: Column(
               children: [
-                const DemoniAvatarWidget(width: 170, height: 170),
-                const SizedBox(height: 12),
-                const Text(
-                  "DEMONI AVATAR",
-                  style: TextStyle(
-                    color: _DemoniTalkAppState.brimstoneYellow,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 18,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                if (_demonLastInput.isNotEmpty) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(10),
-                    margin: const EdgeInsets.only(bottom: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white10,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: _DemoniTalkAppState.hellRed.withValues(alpha: 0.5)),
-                    ),
-                    child: Text(
-                      "Tú: $_demonLastInput",
-                      style: const TextStyle(color: Colors.white70, fontSize: 12, fontStyle: FontStyle.italic),
-                    ),
-                  ),
-                ],
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: _DemoniTalkAppState.demoniPurple.withValues(alpha: 0.25),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: _DemoniTalkAppState.brimstoneYellow.withValues(alpha: 0.6)),
-                  ),
-                  child: Text(
-                    _demonLastReply,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      height: 1.4,
-                    ),
-                  ),
-                ),
+                const DemoniAvatarWidget(width: 330, height: 330),
+                const SizedBox(height: 20),
+                const AudioTachometerWidget(),
               ],
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _demonTalkController,
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
-                  decoration: InputDecoration(
-                    hintText: "Escribe al Demonio...",
-                    hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
-                    isDense: true,
-                    fillColor: const Color(0xFF1E1030),
-                    filled: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: _DemoniTalkAppState.demoniPurple),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: _DemoniTalkAppState.demoniPurple.withValues(alpha: 0.5)),
-                    ),
-                  ),
-                  onSubmitted: (val) => _talkToDemon(val),
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton.filled(
-                style: IconButton.styleFrom(
-                  backgroundColor: _DemoniTalkAppState.demoniPurple,
-                  padding: const EdgeInsets.all(12),
-                ),
-                icon: const Icon(Icons.send, color: Colors.white, size: 20),
-                onPressed: () => _talkToDemon(_demonTalkController.text),
-              ),
-              const SizedBox(width: 4),
-              IconButton.filled(
-                style: IconButton.styleFrom(
-                  backgroundColor: _DemoniTalkAppState.hellRed,
-                  padding: const EdgeInsets.all(12),
-                ),
-                icon: const Icon(Icons.mic, color: _DemoniTalkAppState.brimstoneYellow, size: 20),
-                onPressed: () {
-                  NativeBridge.sendControlIntent("ACTION_MODE_YELLOW");
-                  _showSnackBar("Escuchando al Amo 😈");
-                },
-              ),
-            ],
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _DemoniTalkAppState.demoniPurple,
+              foregroundColor: Colors.white,
+              minimumSize: const Size(double.infinity, 50),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              elevation: 8,
+            ),
+            icon: const Icon(Icons.mic, color: _DemoniTalkAppState.brimstoneYellow, size: 24),
+            label: const Text(
+              "HABLAR AL DEMONIO (ESCUCHA DIRECTA)",
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13),
+            ),
+            onPressed: () {
+              NativeBridge.sendControlIntent("ACTION_MODE_YELLOW");
+              _showSnackBar("Escuchando al Amo 😈");
+            },
           ),
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildControlCircle(_DemoniTalkAppState.brimstoneYellow, () {
-                NativeBridge.sendControlIntent("ACTION_MODE_YELLOW");
-                _showSnackBar("Modo Amarillo Activado");
-              }),
-              _buildControlCircle(Colors.blue, () {
-                NativeBridge.sendControlIntent("ACTION_MODE_BLUE");
-                _showSnackBar("Modo Azul Activado (Vigilancia)");
-              }),
-              _buildControlCircle(Colors.green, () {
-                NativeBridge.sendControlIntent("ACTION_MODE_GREEN");
-                _showSnackBar("Modo Verde Activado (Escucha Continua)");
-              }),
-              _buildControlCircle(_DemoniTalkAppState.hellRed, () {
-                NativeBridge.sendControlIntent("ACTION_MODE_RED");
-                _showSnackBar("Detenido");
-              }),
-            ],
-          ),
-          const SizedBox(height: 20),
           OutlinedButton.icon(
             style: OutlinedButton.styleFrom(
               foregroundColor: _DemoniTalkAppState.hellRed,
@@ -1667,6 +1532,97 @@ class _CommandScreenState extends State<CommandScreen> {
             child: Text(_isEnglish ? "CLOSE" : "CERRAR"),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class AudioTachometerWidget extends StatefulWidget {
+  const AudioTachometerWidget({super.key});
+
+  @override
+  State<AudioTachometerWidget> createState() => _AudioTachometerWidgetState();
+}
+
+class _AudioTachometerWidgetState extends State<AudioTachometerWidget> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RepaintBoundary(
+      child: SizedBox(
+        height: 100,
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF14052B),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: const Color(0xFFFFD600),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF8A2BE2).withValues(alpha: 0.8),
+                    blurRadius: 12,
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    children: const [
+                      Icon(Icons.graphic_eq, color: Color(0xFFFFD600), size: 14),
+                      SizedBox(width: 4),
+                      Text(
+                        "TACÓGRAFO DE AUDIO INFERNAL",
+                        style: TextStyle(color: Color(0xFFFFD600), fontSize: 10, fontWeight: FontWeight.w900),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: List.generate(20, (index) {
+                      final double val = ((index * 0.12 + _controller.value) % 1.0);
+                      final double barHeight = 6 + (val * 24);
+                      final Color barColor = index % 3 == 0
+                          ? const Color(0xFFFF0600)
+                          : (index % 2 == 0 ? const Color(0xFF8A2BE2) : const Color(0xFFFFD600));
+                      return Container(
+                        width: 4,
+                        height: barHeight,
+                        decoration: BoxDecoration(
+                          color: barColor,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      );
+                    }),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }

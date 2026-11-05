@@ -117,18 +117,37 @@ class TtsManager(private val context: Context) {
 
         Log.d("TtsManager", "Hablando en voz alta por altavoz: '$textToSpeak'")
 
+        // Fallback timer calibrado al tamaño del texto para garantizar reactivación del micro
+        val estimatedDurationMs = (textToSpeak.length * 95L + 900L).coerceIn(1500L, 9000L)
+        var doneCalled = false
+        val fallbackRunnable = Runnable {
+            if (!doneCalled) {
+                doneCalled = true
+                mainHandler.post { onDoneCallback?.invoke() }
+            }
+        }
+        mainHandler.postDelayed(fallbackRunnable, estimatedDurationMs)
+
         tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onStart(id: String?) {
                 mainHandler.post { onStartCallback?.invoke() }
             }
 
             override fun onDone(id: String?) {
-                mainHandler.post { onDoneCallback?.invoke() }
+                if (!doneCalled) {
+                    doneCalled = true
+                    mainHandler.removeCallbacks(fallbackRunnable)
+                    mainHandler.post { onDoneCallback?.invoke() }
+                }
             }
 
             @Deprecated("Deprecated in Java")
             override fun onError(id: String?) {
-                mainHandler.post { onDoneCallback?.invoke() }
+                if (!doneCalled) {
+                    doneCalled = true
+                    mainHandler.removeCallbacks(fallbackRunnable)
+                    mainHandler.post { onDoneCallback?.invoke() }
+                }
             }
         })
 
@@ -147,7 +166,11 @@ class TtsManager(private val context: Context) {
             )
             if (result == TextToSpeech.ERROR) {
                 Log.e("TtsManager", "Error en tts.speak para: '$textToSpeak'")
-                onDoneCallback?.invoke()
+                if (!doneCalled) {
+                    doneCalled = true
+                    mainHandler.removeCallbacks(fallbackRunnable)
+                    onDoneCallback?.invoke()
+                }
             }
         } catch (e: Exception) {
             Log.e("TtsManager", "Error ejecutando TTS: ${e.message}")
