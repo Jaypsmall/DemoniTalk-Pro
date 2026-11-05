@@ -215,6 +215,9 @@ class CommandRepository(private val context: Context) {
             VoiceCommand("modo verde", "internal_continuous_on"),
             VoiceCommand("modo continuo", "internal_continuous_on"),
             VoiceCommand("desactivar escucha", "internal_stop"),
+            VoiceCommand("silencio", "internal_stop"),
+            VoiceCommand("cállate", "internal_stop"),
+            VoiceCommand("callate", "internal_stop"),
             VoiceCommand("activa c4", "internal_mode_blue"),
             VoiceCommand("modo azul", "internal_mode_blue"),
             VoiceCommand("pacto secreto", "internal_secret_mode"),
@@ -225,6 +228,14 @@ class CommandRepository(private val context: Context) {
             VoiceCommand("primer chat", "click_first_chat"),
             VoiceCommand("mostrar números", "show_numbers"),
             VoiceCommand("actualizar", "show_numbers"),
+            VoiceCommand("sube", "scroll_up"),
+            VoiceCommand("subir", "scroll_up"),
+            VoiceCommand("dale parriba", "scroll_up"),
+            VoiceCommand("scroll arriba", "scroll_up"),
+            VoiceCommand("baja", "scroll_down"),
+            VoiceCommand("bajar", "scroll_down"),
+            VoiceCommand("scroll abajo", "scroll_down"),
+            VoiceCommand("baja para abajo", "scroll_down"),
             VoiceCommand("cerrar todo", "input keyevent 187 && sleep 1 && input tap 540 1800", true)
         )
     }

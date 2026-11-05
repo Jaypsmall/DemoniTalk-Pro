@@ -110,17 +110,14 @@ class TtsManager(private val context: Context) {
             // 1. Eliminar etiquetas internas y comandos
             .replace(Regex("""\[CMD:.+?]""", RegexOption.IGNORE_CASE), "")
             .replace(Regex("""\[REMEMBER:.+?]""", RegexOption.IGNORE_CASE), "")
-            // 2. Eliminar emojis y símbolos extraños
+            // 2. Eliminar emojis y símbolos extraños y signos de puntuación que confunden al TTS
             .replace(Regex("""[\uD83C-\uDBFF\uDC00-\uDFFF\u2600-\u27BF\u1F300-\u1F9FF]"""), "")
-            .replace(Regex("""[🚀😈🤖⚡🔥✨👍•\-*#_–—]"""), " ")
-            // 3. Normalizar puntos suspensivos y comas dobles
-            .replace(Regex("""\.{2,}"""), ".")
-            .replace(Regex(""",{2,}"""), ",")
-            // 4. Cambiar punto decimal entre números (ej. 2-1 o 4.54)
-            .replace(Regex("""(\d+)\.(\d+)"""), "$1,$2")
-            // 5. Eliminar comillas para evitar conflictos en el TTS
+            .replace(Regex("""[🚀😈🤖⚡🔥✨👍•\-*#_–—¿?¡!,;:.]"""), " ")
+            // 3. Eliminar comillas
             .replace(Regex("""["'«»]"""), "")
-            // 6. Normalizar espacios múltiples
+            // 4. Eliminar palabras de puntuación dictadas por LLMs ("punto", "punto y raya", "coma")
+            .replace(Regex("""\b(punto y coma|punto y raya|punto final|coma|dos puntos|punto)\b""", RegexOption.IGNORE_CASE), "")
+            // 5. Normalizar espacios múltiples
             .replace(Regex("""\s+"""), " ")
             .trim()
     }

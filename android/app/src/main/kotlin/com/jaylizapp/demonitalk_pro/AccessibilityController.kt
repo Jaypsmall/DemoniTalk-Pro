@@ -83,6 +83,8 @@ class AccessibilityController(
                 cleanAction == "show_grid" -> { service.showGrid(); true }
                 cleanAction == "show_numbers" -> { service.showNumbers(); true }
                 cleanAction == "hide_overlays" -> { service.hideOverlays(); true }
+                cleanAction == "scroll_up" -> service.scrollUp()
+                cleanAction == "scroll_down" -> service.scrollDown()
 
                 else -> {
                     Log.w(TAG, "Acción no soportada: $cleanAction")

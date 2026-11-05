@@ -16,6 +16,8 @@ class DualSpeechManager(
         private const val TAG = "DualSpeechManager"
     }
 
+    private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
+
     private val voskManager = VoskSpeechManager(
         context = context,
         onReady = onReady,
@@ -51,17 +53,24 @@ class DualSpeechManager(
         val engine = repository.getSpeechEngine()
         Log.i(TAG, "Iniciando escucha con motor seleccionado: $engine")
 
-        if (engine == "GOOGLE") {
-            if (voskManager.isListening) {
-                voskManager.stopListening()
+        try {
+            voskManager.stopListening()
+        } catch (_: Exception) {}
+        try {
+            googleManager.stopListening()
+        } catch (_: Exception) {}
+
+        mainHandler.postDelayed({
+            try {
+                if (engine == "GOOGLE") {
+                    googleManager.startListening()
+                } else {
+                    voskManager.startListening()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error iniciando motor $engine: ${e.message}")
             }
-            googleManager.startListening()
-        } else {
-            if (googleManager.isListening) {
-                googleManager.stopListening()
-            }
-            voskManager.startListening()
-        }
+        }, 150L)
     }
 
     fun stopListening() {

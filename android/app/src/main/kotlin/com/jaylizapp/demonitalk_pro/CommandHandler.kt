@@ -218,8 +218,23 @@ class CommandHandler(private val context: Context) {
                 return true
             }
 
-            "silencio", "para de escuchar", "deja de escuchar", "deja de oir", "detente" -> {
+            "sube", "subir", "dale parriba", "scroll arriba" -> {
+                executeAsync("scroll_up")
+                return true
+            }
+
+            "baja", "bajar", "scroll abajo", "baja para abajo" -> {
+                executeAsync("scroll_down")
+                return true
+            }
+
+            "silencio", "cállate", "callate", "desactivar escucha", "para de escuchar", "deja de escuchar", "deja de oir", "detente" -> {
                 internalListener?.invoke("internal_stop")
+                return true
+            }
+
+            "pacto secreto", "invocar demonio", "modo secreto" -> {
+                internalListener?.invoke("internal_secret_mode")
                 return true
             }
 

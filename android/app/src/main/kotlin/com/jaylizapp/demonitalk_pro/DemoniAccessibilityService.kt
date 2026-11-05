@@ -230,6 +230,66 @@ class DemoniAccessibilityService : AccessibilityService() {
     fun performHome(): Boolean = performGlobalAction(GLOBAL_ACTION_HOME)
     fun performRecents(): Boolean = performGlobalAction(GLOBAL_ACTION_RECENTS)
 
+    fun scrollUp(): Boolean {
+        val root = rootInActiveWindow
+        if (root != null && performScrollOnNode(root, scrollForward = false)) {
+            Log.d(TAG, "Scroll arriba realizado en nodo scrollable")
+            return true
+        }
+        return performGestureScroll(up = true)
+    }
+
+    fun scrollDown(): Boolean {
+        val root = rootInActiveWindow
+        if (root != null && performScrollOnNode(root, scrollForward = true)) {
+            Log.d(TAG, "Scroll abajo realizado en nodo scrollable")
+            return true
+        }
+        return performGestureScroll(up = false)
+    }
+
+    private fun performScrollOnNode(node: AccessibilityNodeInfo, scrollForward: Boolean): Boolean {
+        try {
+            val className = node.className?.toString()?.lowercase() ?: ""
+            val isScrollableList = className.contains("scroll") ||
+                    className.contains("list") ||
+                    className.contains("recycler") ||
+                    className.contains("pager") ||
+                    className.contains("grid")
+
+            if (isScrollableList) {
+                val action = if (scrollForward) AccessibilityNodeInfo.ACTION_SCROLL_FORWARD else AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD
+                if (node.performAction(action)) return true
+            }
+
+            for (i in 0 until node.childCount) {
+                val child = node.getChild(i) ?: continue
+                if (performScrollOnNode(child, scrollForward)) return true
+            }
+        } catch (_: Exception) {}
+        return false
+    }
+
+    private fun performGestureScroll(up: Boolean): Boolean {
+        try {
+            val metrics = resources.displayMetrics
+            val cx = metrics.widthPixels / 2f
+            val startY = if (up) metrics.heightPixels * 0.3f else metrics.heightPixels * 0.7f
+            val endY = if (up) metrics.heightPixels * 0.7f else metrics.heightPixels * 0.3f
+
+            val path = Path().apply {
+                moveTo(cx, startY)
+                lineTo(cx, endY)
+            }
+            val stroke = GestureDescription.StrokeDescription(path, 0, 250)
+            val gesture = GestureDescription.Builder().addStroke(stroke).build()
+            return dispatchGesture(gesture, null, null)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error en performGestureScroll: ${e.message}", e)
+            return false
+        }
+    }
+
     fun clickFirstConversation(): Boolean {
         val rootNode = rootInActiveWindow ?: return false
 

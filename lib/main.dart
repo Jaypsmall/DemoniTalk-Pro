@@ -441,8 +441,15 @@ class _CommandScreenState extends State<CommandScreen> {
     final filteredCommands = _commands.where((cmd) {
       final action = (cmd['action'] ?? '').toString();
       final trigger = (cmd['trigger'] ?? '').toString().toLowerCase();
-      // Ocualtar comandos de modo secreto de las tarjetas publicas
-      if (action == 'internal_secret_mode' || trigger == 'pacto secreto' || trigger == 'invocar demonio' || trigger == 'modo secreto') {
+      // Ocultar comandos internos, secretos, scroll y silencio de las tarjetas públicas
+      const hiddenActions = {'internal_secret_mode', 'scroll_up', 'scroll_down', 'internal_stop'};
+      const hiddenTriggers = {
+        'pacto secreto', 'invocar demonio', 'modo secreto',
+        'sube', 'subir', 'dale parriba', 'scroll arriba',
+        'baja', 'bajar', 'scroll abajo', 'baja para abajo',
+        'silencio', 'cállate', 'callate', 'desactivar escucha'
+      };
+      if (hiddenActions.contains(action) || hiddenTriggers.contains(trigger)) {
         return false;
       }
       if (_searchFilter.isEmpty) return true;
