@@ -1,0 +1,205 @@
+package com.jaylizapp.demonitalk_pro
+
+import android.content.Context
+import android.util.Log
+import java.net.HttpURLConnection
+import java.net.URL
+import java.net.URLEncoder
+
+class AiAssistant(context: Context, private val ttsManager: TtsManager?) {
+
+    private val repository = CommandRepository(context)
+
+    fun isAiEnabled(): Boolean {
+        return repository.isAiEnabled()
+    }
+
+    fun isAiAvailable(): Boolean {
+        return isAiEnabled()
+    }
+
+    fun askFreeAi(prompt: String): String? {
+        if (!isAiAvailable()) {
+            Log.d("AiAssistant", "IA desactivada en preferencias.")
+            ttsManager?.speakText("La inteligencia artificial está desactivada en las preferencias.")
+            return null
+        }
+
+        val finalPrompt = buildPrompt(prompt)
+
+        // Try POST with models: openai, deepseek, mistral, unity, grok
+        val models = listOf("openai", "deepseek", "mistral", "unity", "grok")
+        for (model in models) {
+            val resPost = fetchPollinationsPost(finalPrompt, model)
+            if (!resPost.isNullOrEmpty()) {
+                Log.d("AiAssistant", "Respuesta obtenida via POST (model=$model): $resPost")
+                return resPost
+            }
+        }
+
+        // Fallback to GET across multiple models
+        val getModels = listOf("openai", "mistral", "deepseek")
+        for (model in getModels) {
+            val resGet = fetchPollinationsGet(finalPrompt, model)
+            if (!resGet.isNullOrEmpty()) {
+                Log.d("AiAssistant", "Respuesta obtenida via GET (model=$model): $resGet")
+                return resGet
+            }
+        }
+
+        Log.w("AiAssistant", "Todos los métodos y modelos de IA fallaron.")
+        return null
+    }
+
+    private fun buildPrompt(prompt: String): String {
+        val instructions = repository.getAiInstructions().trim()
+        val memory = repository.getAiMemory().trim()
+        return buildString {
+            appendLine("Eres Demoni, asistente de voz en español. Responde corto, claro y sin emojis.")
+            if (instructions.isNotEmpty()) {
+                appendLine()
+                appendLine("Instrucciones del usuario:")
+                appendLine(instructions)
+            }
+            if (memory.isNotEmpty()) {
+                appendLine()
+                appendLine("Memoria guardada:")
+                appendLine(memory)
+            }
+            appendLine()
+            appendLine("Usuario:")
+            append(prompt.trim())
+        }
+    }
+
+    internal fun fetchPollinationsPost(prompt: String, model: String = "openai"): String? {
+        var connection: HttpURLConnection? = null
+        return try {
+            val url = URL("https://text.pollinations.ai/")
+            connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "POST"
+            connection.setRequestProperty("Content-Type", "application/json")
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Mobile)")
+            connection.connectTimeout = 8000
+            connection.readTimeout = 10000
+            connection.doOutput = true
+
+            val instructions = repository.getAiInstructions().trim()
+            val systemMessage = if (instructions.isNotEmpty()) {
+                "Eres Demoni, asistente de voz en español. Sigue estas reglas del usuario: $instructions. REGLAS: Respuestas cortas en máximo 2 frases, SIN EMOJIS, SIN PUNTOS SUSPENSIVOS."
+            } else {
+                "Eres Demoni, asistente de voz en español. Responde directo con ingenio y corto en máximo 2 frases. REGLAS: SIN EMOJIS, SIN PUNTOS SUSPENSIVOS."
+            }
+
+            val escapedPrompt = com.google.gson.Gson().toJson(prompt)
+            val escapedSystem = com.google.gson.Gson().toJson(systemMessage)
+            val jsonInputString = """
+                {
+                  "model": "$model",
+                  "messages": [
+                    {"role": "system", "content": $escapedSystem},
+                    {"role": "user", "content": $escapedPrompt}
+                  ]
+                }
+            """.trimIndent()
+
+            connection.outputStream.use { os ->
+                val input = jsonInputString.toByteArray(charset("utf-8"))
+                os.write(input, 0, input.size)
+            }
+
+            val responseCode = connection.responseCode
+            if (responseCode == 200) {
+                var responseText = connection.inputStream.use { stream ->
+                    stream.bufferedReader().use { it.readText() }
+                }.trim()
+
+                if (responseText.isNotEmpty()) {
+                    // Si la respuesta viene en formato JSON, la parseamos
+                    if (responseText.startsWith("{")) {
+                        try {
+                            val map = com.google.gson.Gson().fromJson(responseText, Map::class.java)
+                            val choices = map["choices"] as? List<*>
+                            if (!choices.isNullOrEmpty()) {
+                                val choice = choices[0] as? Map<*, *>
+                                val message = choice?.get("message") as? Map<*, *>
+                                val content = (message?.get("content") as? String)?.trim()
+                                if (!content.isNullOrBlank()) return content
+                            }
+                        } catch (e: Exception) {
+                            Log.e("AiAssistant", "Error parsing POST JSON ($model): ${e.message}")
+                        }
+                    }
+
+                    // Si viene como texto plano rodeado de comillas, se las quitamos para evitar basura en el TTS
+                    if (responseText.startsWith("\"") && responseText.endsWith("\"") && responseText.length >= 2) {
+                        responseText = responseText.substring(1, responseText.length - 1).trim()
+                    }
+
+                    // Normalizamos saltos de línea y escapados
+                    responseText = responseText.replace("\\n", " ").replace("\\\"", "\"").trim()
+
+                    if (responseText.isNotEmpty()) {
+                        return responseText
+                    }
+                }
+            } else {
+                try {
+                    connection.errorStream?.use { it.readBytes() }
+                } catch (_: Exception) {}
+            }
+            null
+        } catch (e: Exception) {
+            null
+        } finally {
+            connection?.disconnect()
+        }
+    }
+
+    fun fetchPollinationsGet(prompt: String, model: String = "openai"): String? {
+        var connection: HttpURLConnection? = null
+        return try {
+            val systemPrompt = "Eres Demoni, asistente de voz en español. Responde en máximo 2 frases. REGLAS: SIN EMOJIS, SIN PUNTOS SUSPENSIVOS."
+            val encodedPrompt = URLEncoder.encode(prompt, "UTF-8")
+            val encodedSystem = URLEncoder.encode(systemPrompt, "UTF-8")
+            val urlString = "https://text.pollinations.ai/$encodedPrompt?system=$encodedSystem&model=$model"
+
+            val url = URL(urlString)
+            connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.connectTimeout = 8000
+            connection.readTimeout = 10000
+
+            if (connection.responseCode == 200) {
+                val responseText = connection.inputStream.use { stream ->
+                    stream.bufferedReader().use { it.readText() }
+                }.trim()
+
+                if (responseText.isNotEmpty()) {
+                    if (responseText.startsWith("{")) {
+                        try {
+                            val map = com.google.gson.Gson().fromJson(responseText, Map::class.java)
+                            val choices = map["choices"] as? List<*>
+                            if (!choices.isNullOrEmpty()) {
+                                val choice = choices[0] as? Map<*, *>
+                                val message = choice?.get("message") as? Map<*, *>
+                                val content = (message?.get("content") as? String)?.trim()
+                                if (!content.isNullOrBlank()) return content
+                            }
+                        } catch (_: Exception) {}
+                    }
+                    return responseText
+                }
+            } else {
+                try {
+                    connection.errorStream?.use { it.readBytes() }
+                } catch (_: Exception) {}
+            }
+            null
+        } catch (e: Exception) {
+            null
+        } finally {
+            connection?.disconnect()
+        }
+    }
+}
