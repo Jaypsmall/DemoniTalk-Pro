@@ -73,6 +73,8 @@ Si la librería nativa no está compilada aún, **DemoniTalk Pro** cuenta con un
 
 ## 📸 Capturas de Pantalla
 
+> Un vistazo al diseño infernal de **DemoniTalk Pro**, la gestión de comandos, el cerebro IA y el **Modo Secreto del Portal Demoníaco** con el avatar de Demoni y el tacógrafo de audio:
+
 <p align="center">
   <img src="docs/assets/demoni_1.png" width="280" alt="Pantalla Principal" />
   <img src="docs/assets/demoni_2.png" width="280" alt="Cerebro IA" />
@@ -81,4 +83,6 @@ Si la librería nativa no está compilada aún, **DemoniTalk Pro** cuenta con un
   <img src="docs/assets/demoni_5.png" width="280" alt="Modo Secreto" />
   <img src="docs/assets/demoni_6.png" width="280" alt="Tacógrafo de Audio" />
 </p>
+
+
 
