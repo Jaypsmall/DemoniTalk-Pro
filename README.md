@@ -68,3 +68,22 @@ Si la librería nativa no está compilada aún, **DemoniTalk Pro** cuenta con un
    - 🔴 **Rojo**: Detención total.
 3. **Cerebro e Inteligencia Artificial**: Integración con asistente IA con memoria persistente.
 4. **Respaldos e Importación/Exportación**: Importa y exporta la configuración de tus comandos pactados en formato JSON.
+
+---
+
+## 📸 Capturas de Pantalla
+
+> Un vistazo al diseño infernal de **DemoniTalk Pro**, la gestión de comandos, el cerebro IA y el **Modo Secreto del Portal Demoníaco** con el avatar de Demoni y el tacógrafo de audio:
+
+| Pantalla Principal & Comandos | Cerebro y Memoria IA |
+| :---: | :---: |
+| ![Demoni 1](docs/assets/demoni_1.png) | ![Demoni 2](docs/assets/demoni_2.png) |
+
+| Ajustes del Sistema & Motores | Guía y Funciones |
+| :---: | :---: |
+| ![Demoni 3](docs/assets/demoni_3.png) | ![Demoni 4](docs/assets/demoni_4.png) |
+
+| Modo Secreto (Portal Demoníaco) | Tacógrafo de Audio & Chat con Demoni |
+| :---: | :---: |
+| ![Demoni 5](docs/assets/demoni_5.png) | ![Demoni 6](docs/assets/demoni_6.png) |
+
