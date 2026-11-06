@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DemoniTalk Pro 😈 - El Asistente de Voz Infernal</title>
+    <style>
+        :root {
+            --hell-red: #FF0600;
+            --brimstone-yellow: #FFD600;
+            --demoni-purple: #8A2BE2;
+            --obsidian: #0A0512;
+            --surface: #14052B;
+            --text-main: #FFFFFF;
+            --text-muted: #B0BEC5;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--obsidian);
+            color: var(--text-main);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        header {
+            text-align: center;
+            padding: 60px 20px;
+            background: linear-gradient(135deg, rgba(138,43,226,0.2), rgba(255,6,0,0.2));
+            border-bottom: 2px solid var(--hell-red);
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            text-shadow: 0 0 20px rgba(255,6,0,0.6);
+        }
+
+        h1 span.de { color: var(--hell-red); }
+        h1 span.moni { color: var(--brimstone-yellow); }
+
+        p.tagline {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto 30px auto;
+        }
+
+        .badges {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        .badge {
+            background: var(--surface);
+            border: 1px solid var(--demoni-purple);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: var(--brimstone-yellow);
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        section {
+            margin-bottom: 60px;
+        }
+
+        h2 {
+            font-size: 2rem;
+            margin-bottom: 25px;
+            color: var(--brimstone-yellow);
+            border-left: 4px solid var(--hell-red);
+            padding-left: 15px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .feature-card {
+            background: var(--surface);
+            border: 1px solid rgba(138,43,226,0.4);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--hell-red);
+        }
+
+        .feature-card h3 {
+            color: var(--brimstone-yellow);
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .feature-card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .screenshots {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .screenshot-item {
+            background: var(--surface);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(255,214,0,0.3);
+            text-align: center;
+            padding-bottom: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        }
+
+        .screenshot-item img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-bottom: 2px solid var(--demoni-purple);
+        }
+
+        .screenshot-item span {
+            display: block;
+            margin-top: 12px;
+            font-weight: bold;
+            color: var(--brimstone-yellow);
+            font-size: 0.95rem;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            background: #06030A;
+            border-top: 1px solid rgba(138,43,226,0.3);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        footer span {
+            color: var(--hell-red);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1><span class="de">De</span><span class="moni">moni</span>Talk Pro 😈</h1>
+        <p class="tagline">El asistente de voz definitivo para Android impulsado por Flutter, Kotlin, Rust y un toque infernal.</p>
+        <div class="badges">
+            <span class="badge">Flutter</span>
+            <span class="badge">Kotlin</span>
+            <span class="badge">Rust Native Engine</span>
+            <span class="badge">Vosk Offline</span>
+        </div>
+    </header>
+
+    <div class="container">
+        <section>
+            <h2>🔥 Características Principales</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h3>Modo Demoníaco Híbrido</h3>
+                    <p>Controla tu dispositivo combinando comandos Root (Shell) y Accesibilidad avanzada sin fricciones.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Modo Secreto Portal Demoníaco</h3>
+                    <p>Un modo exclusivo e invisible activado por voz con Avatar de Demoni y tacógrafo de audio en tiempo real.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Conversador Inteligente Local</h3>
+                    <p>Biblioteca offline de respuestas en milisegundos con personalidad única y cero filtros con solera.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Doble Motor de Voz</h3>
+                    <p>Elige entre reconocimiento offline con Vosk o en línea con Google Speech de manera dinámica.</p>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>📸 Capturas de Pantalla</h2>
+            <div class="screenshots">
+                <div class="screenshot-item">
+                    <img src="assets/demoni_1.png" alt="Pantalla Principal">
+                    <span>Pantalla Principal & Comandos</span>
+                </div>
+                <div class="screenshot-item">
+                    <img src="assets/demoni_2.png" alt="Cerebro IA">
+                    <span>Cerebro y Memoria IA</span>
+                </div>
+                <div class="screenshot-item">
+                    <img src="assets/demoni_3.png" alt="Ajustes del Sistema">
+                    <span>Ajustes del Sistema y Motores</span>
+                </div>
+                <div class="screenshot-item">
+                    <img src="assets/demoni_4.png" alt="Guía y Funciones">
+                    <span>Guía y Funciones</span>
+                </div>
+                <div class="screenshot-item">
+                    <img src="assets/demoni_5.png" alt="Modo Secreto">
+                    <span>Modo Secreto (Portal Demoníaco)</span>
+                </div>
+                <div class="screenshot-item">
+                    <img src="assets/demoni_6.png" alt="Tacógrafo de Audio">
+                    <span>Tacógrafo de Audio & Chat</span>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <p>Created by <span>JAYLIZ</span> with ❤️ & Hellfire. DemoniTalk Pro © 2026.</p>
+    </footer>
+
+</body>
+</html>
