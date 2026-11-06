@@ -1,0 +1,166 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="100%" height="100%">
+  <!-- Definición de Gradientes y Sombras -->
+  <defs>
+    <!-- Sombra proyectada en el suelo -->
+    <ellipse id="suelo-sombra" cx="400" cy="920" rx="220" ry="25" fill="#000000" opacity="0.65" filter="drop-shadow(0px 0px 15px rgba(0,0,0,0.8))"/>
+
+    <!-- Gradiente Piel Demonio -->
+    <linearGradient id="piel-demonio" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff2a4b"/>
+      <stop offset="50%" stop-color="#d60029"/>
+      <stop offset="100%" stop-color="#800014"/>
+    </linearGradient>
+
+    <!-- Gradiente Cuernos y Puntas -->
+    <linearGradient id="cuerno-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2b2b2b"/>
+      <stop offset="70%" stop-color="#111111"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </linearGradient>
+
+    <!-- Fuego / Neon Ojos -->
+    <linearGradient id="brillo-ojos" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00ffff"/>
+      <stop offset="100%" stop-color="#0088ff"/>
+    </linearGradient>
+
+    <!-- Gradiente Sudadera -->
+    <linearGradient id="sudadera-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1f1f24"/>
+      <stop offset="50%" stop-color="#141417"/>
+      <stop offset="100%" stop-color="#09090a"/>
+    </linearGradient>
+
+    <!-- Gradiente Cadena / Metal -->
+    <linearGradient id="metal-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="50%" stop-color="#a6a6a6"/>
+      <stop offset="100%" stop-color="#333333"/>
+    </linearGradient>
+
+    <!-- Brillo Neon Azul Demoni -->
+    <filter id="neon-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Grupo Principal (Sin fondo) -->
+  <g id="demoni-cuerpo-entero">
+
+    <!-- Sombra en suelo -->
+    <use href="#suelo-sombra" />
+
+    <!-- COLA DE DEMONIO -->
+    <path d="M 460 680 Q 580 720 570 820 T 510 880 Q 480 900 520 910 Q 580 920 620 840 Q 640 760 510 660 Z" fill="url(#piel-demonio)" />
+    <!-- Punta de Flecha de la Cola -->
+    <polygon points="520,910 480,890 495,935" fill="#d60029" />
+
+    <!-- PIERNAS Y ZAPATILLAS (Estilo Urbano / Sneakers) -->
+    <!-- Pierna Izquierda -->
+    <path d="M 310 680 L 290 820 L 340 820 L 350 680 Z" fill="#111115" />
+    <!-- Zapatilla Izquierda -->
+    <path d="M 260 820 C 260 820 280 810 320 810 C 350 810 355 830 355 845 L 250 845 Z" fill="#ffffff" />
+    <path d="M 245 845 L 360 845 L 360 860 C 360 860 300 865 245 860 Z" fill="#d60029" />
+    <!-- Detalle Zapatilla Izq -->
+    <path d="M 280 825 L 310 825" stroke="#000000" stroke-width="3" stroke-linecap="round" />
+    <path d="M 282 832 L 312 832" stroke="#000000" stroke-width="3" stroke-linecap="round" />
+
+    <!-- Pierna Derecha -->
+    <path d="M 450 680 L 460 820 L 410 820 L 410 680 Z" fill="#111115" />
+    <!-- Zapatilla Derecha -->
+    <path d="M 395 810 C 435 810 455 820 455 820 L 465 845 L 360 845 C 360 830 365 810 395 810 Z" fill="#ffffff" />
+    <path d="M 355 845 L 470 845 L 470 860 C 415 865 355 860 355 860 Z" fill="#d60029" />
+    <!-- Detalle Zapatilla Der -->
+    <path d="M 400 825 L 430 825" stroke="#000000" stroke-width="3" stroke-linecap="round" />
+    <path d="M 398 832 L 428 832" stroke="#000000" stroke-width="3" stroke-linecap="round" />
+
+    <!-- PANTALÓN (Pantalón Ancho / Jogger) -->
+    <path d="M 285 520 L 310 690 L 360 680 L 400 560 L 440 680 L 485 690 L 515 520 Z" fill="#17171c" stroke="#0a0a0d" stroke-width="4" />
+    <!-- Pliegues del Pantalón -->
+    <path d="M 330 550 Q 320 600 335 650" stroke="#0d0d12" stroke-width="4" fill="none" />
+    <path d="M 470 550 Q 480 600 465 650" stroke="#0d0d12" stroke-width="4" fill="none" />
+
+    <!-- TORSO (Sudadera Oversize Dark) -->
+    <path d="M 240 340 Q 400 320 560 340 L 525 540 Q 400 560 275 540 Z" fill="url(#sudadera-grad)" stroke="#000" stroke-width="3" />
+
+    <!-- Bolsillo Canguro Sudadera -->
+    <path d="M 310 460 L 490 460 L 470 530 Q 400 540 330 530 Z" fill="#121215" stroke="#26262e" stroke-width="2" />
+
+    <!-- LOGO EN LA SUDADERA (Texto DEMONI Cyberpunk) -->
+    <text x="400" y="420" font-family="'Impact', 'Arial Black', sans-serif" font-size="38" font-weight="900" fill="#00ffff" text-anchor="middle" letter-spacing="4" filter="url(#neon-glow)">DEMONI</text>
+    <text x="400" y="440" font-family="'Arial', sans-serif" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle" letter-spacing="6">TALK</text>
+
+    <!-- BRAZO IZQUIERDO (Cruzado o posando) -->
+    <path d="M 240 340 Q 180 400 220 480 Q 250 500 280 450 Q 240 410 275 360 Z" fill="#1c1c22" stroke="#0a0a0d" stroke-width="3" />
+    <!-- Mano Izquierda (Garra Roja) -->
+    <path d="M 220 480 Q 210 510 230 525 Q 245 525 255 500 Z" fill="url(#piel-demonio)" />
+    <path d="M 215 505 L 205 515" stroke="#111" stroke-width="2" /> <!-- Uña -->
+
+    <!-- BRAZO DERECHO (Mano en el bolsillo / Actitud) -->
+    <path d="M 560 340 Q 620 400 580 480 Q 550 500 520 450 Q 560 410 525 360 Z" fill="#1c1c22" stroke="#0a0a0d" stroke-width="3" />
+    <!-- Mano Derecha -->
+    <path d="M 580 480 Q 590 510 570 525 Q 555 525 545 500 Z" fill="url(#piel-demonio)" />
+
+    <!-- CADENA DE PLATA / CUELLO -->
+    <path d="M 350 335 Q 400 380 450 335" fill="none" stroke="url(#metal-grad)" stroke-width="6" stroke-dasharray="8,4" />
+    <!-- Colgante de Cruz Invertida / Rayo -->
+    <polygon points="400,365 393,380 407,380" fill="url(#metal-grad)" />
+    <polygon points="400,375 400,395 393,385 407,385" fill="url(#metal-grad)" stroke="#1a1a1a" stroke-width="1" />
+
+    <!-- CABEZA Y CUELLO -->
+    <!-- Cuello -->
+    <path d="M 360 310 L 440 310 L 450 340 L 350 340 Z" fill="#a8001e" />
+
+    <!-- Cara (Estructura Afilada / Malota) -->
+    <path d="M 310 200 Q 400 170 490 200 Q 510 270 480 310 Q 400 360 320 310 Q 290 270 310 200 Z" fill="url(#piel-demonio)" stroke="#5e000e" stroke-width="3" />
+
+    <!-- OREJAS DE DEMONIO (Puntiagudas) -->
+    <!-- Izquierda -->
+    <path d="M 310 220 Q 230 190 260 250 Q 290 250 315 260 Z" fill="url(#piel-demonio)" stroke="#4d000b" stroke-width="2" />
+    <!-- Derecha -->
+    <path d="M 490 220 Q 570 190 540 250 Q 510 250 485 260 Z" fill="url(#piel-demonio)" stroke="#4d000b" stroke-width="2" />
+
+    <!-- CUERNOS GRANDES (Curvados hacia arriba) -->
+    <!-- Cuerno Izquierdo -->
+    <path d="M 330 190 C 310 100 230 70 240 20 C 270 60 330 110 360 175 Z" fill="url(#cuerno-grad)" stroke="#000000" stroke-width="3" />
+    <!-- Grietas / Textura Cuerno Izq -->
+    <path d="M 280 80 Q 300 90 290 110" stroke="#444" stroke-width="2" fill="none" />
+    <path d="M 310 130 Q 330 140 320 155" stroke="#444" stroke-width="2" fill="none" />
+
+    <!-- Cuerno Derecho -->
+    <path d="M 470 190 C 490 100 570 70 560 20 C 530 60 470 110 440 175 Z" fill="url(#cuerno-grad)" stroke="#000000" stroke-width="3" />
+    <!-- Grietas / Textura Cuerno Der -->
+    <path d="M 520 80 Q 500 90 510 110" stroke="#444" stroke-width="2" fill="none" />
+    <path d="M 490 130 Q 470 140 480 155" stroke="#444" stroke-width="2" fill="none" />
+
+    <!-- BOCA / SONRISA MACABRA -->
+    <path d="M 340 280 Q 400 325 460 280 Q 400 295 340 280 Z" fill="#1a0005" stroke="#000000" stroke-width="3" />
+    <!-- Dientes Afilados (Colmillos) -->
+    <polygon points="360,283 370,283 365,295" fill="#ffffff" />
+    <polygon points="430,283 440,283 435,295" fill="#ffffff" />
+    <polygon points="385,286 395,286 390,298" fill="#ffffff" />
+    <polygon points="405,286 415,286 410,298" fill="#ffffff" />
+
+    <!-- CEJAS AGRESIVAS -->
+    <path d="M 330 215 L 390 235 L 385 242 Z" fill="#000000" />
+    <path d="M 470 215 L 410 235 L 415 242 Z" fill="#000000" />
+
+    <!-- OJOS BRILLANTES (Cyan / Neon) -->
+    <!-- Ojo Izquierdo -->
+    <polygon points="340,225 385,240 345,250" fill="#000000" />
+    <polygon points="348,230 380,240 352,246" fill="url(#brillo-ojos)" filter="url(#neon-glow)" />
+    <ellipse cx="362" cy="238" rx="2" ry="6" fill="#ffffff" /> <!-- Pupila Rasgada -->
+
+    <!-- Ojo Derecho -->
+    <polygon points="460,225 415,240 455,250" fill="#000000" />
+    <polygon points="452,230 420,240 448,246" fill="url(#brillo-ojos)" filter="url(#neon-glow)" />
+    <ellipse cx="438" cy="238" rx="2" ry="6" fill="#ffffff" /> <!-- Pupila Rasgada -->
+
+    <!-- NARIZ (Afilada estilo comic/anime) -->
+    <polygon points="400,238 393,260 407,260" fill="#990014" />
+
+    <!-- DETALLES DE LUZ Y SOMBRA EN LA CARA -->
+    <path d="M 400 180 Q 440 185 465 200" stroke="#ff6b81" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.6" />
+  </g>
+</svg>
