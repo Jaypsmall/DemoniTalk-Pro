@@ -251,46 +251,25 @@ class FloatingButtonService : Service() {
             if (repository.isSecretMode()) {
                 val cleanPrompt = cleanPromptForAi(lowerText)
                 val promptToProcess = if (cleanPrompt.isNotBlank()) cleanPrompt else text
-                Log.i("DemoniTalk", "🔥 MODO SECRETO ACTIVO: Evaluando para '$promptToProcess'")
+                Log.i("DemoniTalk", "🔥 MODO SECRETO INSTANTÁNEO: Procesando con ConversadorGordo para '$promptToProcess'")
+                val response = ConversadorGordo.procesar(promptToProcess)
 
-                if (ConversadorGordo.tieneCoincidencia(promptToProcess)) {
-                    val response = ConversadorGordo.procesar(promptToProcess)
-                    withContext(Dispatchers.Main) {
-                        if (wasWaiting) {
-                            isWaitingForCommandAfterWake = false
+                withContext(Dispatchers.Main) {
+                    if (wasWaiting) {
+                        isWaitingForCommandAfterWake = false
+                    }
+                    ttsManager.speakText(
+                        textToSpeak = response,
+                        onStartCallback = {
+                            speechManager.stopListening()
+                        },
+                        onDoneCallback = {
+                            if (!isServiceDestroyed) {
+                                scheduleListeningRestart(150)
+                            }
                         }
-                        ttsManager.speakText(
-                            textToSpeak = response,
-                            onStartCallback = { speechManager.stopListening() },
-                            onDoneCallback = {
-                                if (!isServiceDestroyed) scheduleListeningRestart(150)
-                            }
-                        )
-                        MainActivity.notifySecretDemonSpeech(promptToProcess, response)
-                    }
-                    return@launch
-                }
-
-                CoroutineScope(Dispatchers.IO).launch {
-                    val aiReply = if (aiAssistant.isAiAvailable()) aiAssistant.askFreeAi(promptToProcess) else null
-                    val cleanAiReply = if (!aiReply.isNullOrBlank()) ttsManager.cleanTextForSpeech(aiReply) else ""
-
-                    val finalReply = if (cleanAiReply.isNotBlank() && cleanAiReply != "." && cleanAiReply.lowercase() != "punto") {
-                        cleanAiReply
-                    } else {
-                        ConversadorGordo.procesar(promptToProcess)
-                    }
-
-                    withContext(Dispatchers.Main) {
-                        ttsManager.speakText(
-                            textToSpeak = finalReply,
-                            onStartCallback = { speechManager.stopListening() },
-                            onDoneCallback = {
-                                if (!isServiceDestroyed) scheduleListeningRestart(150)
-                            }
-                        )
-                        MainActivity.notifySecretDemonSpeech(promptToProcess, finalReply)
-                    }
+                    )
+                    MainActivity.notifySecretDemonSpeech(promptToProcess, response)
                 }
                 return@launch
             }

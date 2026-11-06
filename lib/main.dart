@@ -322,9 +322,7 @@ class _CommandScreenState extends State<CommandScreen> {
   int _titleTapCount = 0;
 
   final ConversadorGordo _conversador = ConversadorGordo();
-  final TextEditingController _demonTalkController = TextEditingController();
-  String _demonLastInput = '';
-  String _demonLastReply = '¡Hola, hermano! Soy Demoni. Dime lo que quieras y te respondo con toda la solera.';
+  int _demonAvatarState = 0;
 
   void _setSecretMode(bool active) {
     setState(() {
@@ -333,16 +331,21 @@ class _CommandScreenState extends State<CommandScreen> {
     NativeBridge.saveSecretMode(active);
   }
 
-  void _talkToDemon(String text) {
-    final cleanText = text.trim();
-    if (cleanText.isEmpty) return;
-    final reply = _conversador.procesar(cleanText);
+  void _updateDemonMood(String reply) {
+    int mood = 0;
+    final lowerReply = reply.toLowerCase();
+    if (lowerReply.contains('buenas') || lowerReply.contains('hola') || lowerReply.contains('pasa') || lowerReply.contains('dime')) {
+      mood = 1; // Saludando (demoni22)
+    } else if (lowerReply.contains('código') || lowerReply.contains('bug') || lowerReply.contains('servidor') || lowerReply.contains('programa') || lowerReply.contains('kernel')) {
+      mood = 2; // Tramando algo (demoni33)
+    } else if (lowerReply.contains('ostras') || lowerReply.contains('no me entero') || lowerReply.contains('recovecos') || lowerReply.contains('cuadros')) {
+      mood = 3; // No sabe nada (demoni44)
+    } else {
+      mood = 0; // Normal (demoni11)
+    }
     setState(() {
-      _demonLastInput = cleanText;
-      _demonLastReply = reply;
+      _demonAvatarState = mood;
     });
-    _demonTalkController.clear();
-    NativeBridge.speakText(reply);
   }
 
   @override
@@ -359,13 +362,9 @@ class _CommandScreenState extends State<CommandScreen> {
         }
       } else if (call.method == 'onSecretDemonSpeech') {
         final args = Map<String, dynamic>.from(call.arguments as Map);
-        final input = args['input']?.toString() ?? '';
         final response = args['response']?.toString() ?? '';
-        if (mounted) {
-          setState(() {
-            _demonLastInput = input;
-            _demonLastReply = response;
-          });
+        if (mounted && response.isNotEmpty) {
+          _updateDemonMood(response);
         }
       }
     });
@@ -702,7 +701,7 @@ class _CommandScreenState extends State<CommandScreen> {
             ),
             child: Column(
               children: [
-                const DemoniAvatarWidget(width: 330, height: 330),
+                DemoniAvatarWidget(width: 330, height: 330, stateIndex: _demonAvatarState),
                 const SizedBox(height: 20),
                 const AudioTachometerWidget(),
               ],
@@ -1400,151 +1399,6 @@ class _CommandScreenState extends State<CommandScreen> {
       if (!mounted) return;
       _showSnackBar(_isEnglish ? 'Could not save JSON: $e' : 'No se pudo guardar el JSON: $e');
     }
-  }
-
-  void _openImportDialog() {
-    final importController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(
-          _isEnglish ? "IMPORT COMMANDS (JSON)" : "IMPORTAR PACTOS / COMANDOS",
-          style: const TextStyle(color: _DemoniTalkAppState.hellRed, fontWeight: FontWeight.w900, fontSize: 16),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              _isEnglish
-                  ? "Paste your JSON backup code below or from the clipboard:"
-                  : "Pega el código JSON de tu respaldo o de tu otra app a continuación:",
-              style: const TextStyle(fontSize: 12),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: importController,
-              maxLines: 6,
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
-              decoration: const InputDecoration(
-                hintText: '[\n  {\n    "trigger": "cámara",\n    "action": "com.android.camera",\n    "isRoot": false\n  }\n]',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              try {
-                final data = await Clipboard.getData(Clipboard.kTextPlain);
-                if (data?.text != null) {
-                  importController.text = data!.text!;
-                }
-              } catch (e) {
-                debugPrint("Error al acceder al portapapeles: $e");
-              }
-            },
-            child: Text(_isEnglish ? "PASTE CLIPBOARD" : "PEGAR DE PORTAPAPELES"),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(_isEnglish ? "CANCEL" : "CANCELAR", style: const TextStyle(color: Colors.grey)),
-          ),
-          TextButton(
-            onPressed: () {
-              final text = importController.text.trim();
-              if (text.isEmpty) return;
-
-              try {
-                final List parsed = jsonDecode(text) as List;
-                final newCmds = parsed.map((e) {
-                  final map = e as Map<String, dynamic>;
-                  return {
-                    'trigger': map['trigger']?.toString() ?? '',
-                    'action': map['action']?.toString() ?? '',
-                    'isRoot': map['isRoot'] == true,
-                  };
-                }).where((c) => (c['trigger'] as String).isNotEmpty).toList();
-
-                _saveAndRefreshCommands(newCmds);
-                Navigator.pop(ctx);
-                _showSnackBar(_isEnglish
-                    ? "${newCmds.length} commands restored successfully! 😈"
-                    : "¡${newCmds.length} comandos importados con éxito! 😈");
-              } catch (e) {
-                _showSnackBar(_isEnglish ? "Invalid JSON format: $e" : "Formato JSON no válido: $e");
-              }
-            },
-            child: Text(
-              _isEnglish ? "IMPORT" : "IMPORTAR",
-              style: const TextStyle(color: _DemoniTalkAppState.hellRed, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _openExportDialog() {
-    final jsonText = const JsonEncoder.withIndent('  ').convert(_commands);
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(
-          _isEnglish ? "EXPORT COMMANDS (JSON)" : "EXPORTAR RESPALDO JSON",
-          style: const TextStyle(color: _DemoniTalkAppState.hellRed, fontWeight: FontWeight.w900, fontSize: 16),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              _isEnglish
-                  ? "Copy this JSON structure to restore your commands anywhere:"
-                  : "Copia este código JSON para guardar o transferir tus tarjetas:",
-              style: const TextStyle(fontSize: 12),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              height: 180,
-              width: double.maxFinite,
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: widget.isDarkMode ? Colors.black38 : Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
-              ),
-              child: SingleChildScrollView(
-                child: SelectableText(
-                  jsonText,
-                  style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: jsonText));
-              Navigator.pop(ctx);
-              _showSnackBar(_isEnglish ? "Copied to clipboard! 😈" : "¡Copiado al portapapeles! 😈");
-            },
-            child: Text(
-              _isEnglish ? "COPY TO CLIPBOARD" : "COPIAR AL PORTAPAPELES",
-              style: const TextStyle(color: _DemoniTalkAppState.hellRed, fontWeight: FontWeight.bold),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(_isEnglish ? "CLOSE" : "CERRAR"),
-          ),
-        ],
-      ),
-    );
   }
 }
 

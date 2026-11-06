@@ -11,6 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
+  flutter_svg: ^2.0.10
 
 dev_dependencies:
   flutter_test:
@@ -22,6 +23,10 @@ flutter:
   uses-material-design: true
   assets:
     - assets/icon/demoni_avatar.svg
+    - assets/SVGs/demoni11.svg
+    - assets/SVGs/demoni22.svg
+    - assets/SVGs/demoni33.svg
+    - assets/SVGs/demoni44.svg
     - assets/icono_demoni.png
     - assets/icono_demoni2.png
 
