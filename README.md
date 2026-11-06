@@ -1,6 +1,20 @@
-# 😈 DemoniTalk Pro  ![Flutter](https://img.shields.io/badge/Flutter-181717?style=flat&logo=flutter&logoColor=FFD600) ![Kotlin](https://img.shields.io/badge/Kotlin-181717?style=flat&logo=kotlin&logoColor=FFD600) ![Rust](https://img.shields.io/badge/Rust-181717?style=flat&logo=rust&logoColor=FFD600)
+# 😈 DemoniTalk Pro  ![Kotlin](https://img.shields.io/badge/Kotlin-181717?style=flat&logo=kotlin&logoColor=C81AEE) ![Flutter](https://img.shields.io/badge/Flutter-181717?style=flat&logo=flutter&logoColor=70B9EC) ![Rust](https://img.shields.io/badge/Rust-181717?style=flat&logo=rust&logoColor=FF6000)
 
-¡La versión más potente de **DemoniTalk** reconstruida con **Flutter**, **Kotlin** y **Rust Native Engine**!
+<a href="https://github.com/Jaypsmall/DemoniTalk-Pro/releases/download/Rust/DemoniTalk_Pro_v2.0.2.apk">
+<img src="https://img.shields.io/badge/DOWNLOAD_DEMONITALK_PRO_v2.0.2_APK-181717?style=flat&logo=android&logoColor=green" alt="Download Rust Release">
+</a>
+
+<a href="https://github.com/Jaypsmall/DemoniTalk-Pro/releases/download/Rust/DemoniTalk_Pro_v2.0.3.apk">
+<img src="https://img.shields.io/badge/DOWNLOAD_DEMONITALK_PRO_v2.0.3_APK-181717?style=flat&logo=android&logoColor=green" alt="Download Rust Release">
+</a>
+
+¡La versión más potente de **DemoniTalk Pro** reconstruida con **Flutter**, **Kotlin** y **Rust Native Engine**!
+
+<p align="center">
+  <a href="https://kotlinlang.org" target="_blank"><img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/kotlin/kotlin-original.svg" height="50" alt="Kotlin" /></a> &nbsp;&nbsp;
+  <a href="https://flutter.dev" target="_blank"><img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/flutter/flutter-original.svg" height="50" alt="Flutter" /></a> &nbsp;&nbsp;
+  <a href="https://www.rust-lang.org" target="_blank"><img src="https://rustacean.net/assets/rustacean-flat-happy.svg" height="50" alt="Rust" /></a>
+</p>
 
 ---
 
@@ -30,7 +44,7 @@ demoni_pro/
 
 ---
 
-## ⚡ Rust Native Engine (`demoni_engine`)
+## <a href="https://www.rust-lang.org" target="_blank"><img src="https://rustacean.net/assets/rustacean-flat-happy.svg" height="30" alt="Rust" /></a> Rust Native Engine (`demoni_engine`) <a href="https://www.rust-lang.org" target="_blank"><img src="https://rustacean.net/assets/rustacean-flat-happy.svg" height="30" alt="Rust" /></a> 
 
 El motor nativo escrito en **Rust** proporciona procesamiento de voz y coincidencia de comandos con latencia inferior a 1 ms:
 
@@ -69,9 +83,9 @@ Si la librería nativa no está compilada aún, **DemoniTalk Pro** cuenta con un
 3. **Cerebro e Inteligencia Artificial**: Integración con asistente IA con memoria persistente.
 4. **Respaldos e Importación/Exportación**: Importa y exporta la configuración de tus comandos pactados en formato JSON.
 
----
-
 ## 📸 Capturas de Pantalla
+
+> Un vistazo al diseño infernal de **DemoniTalk Pro**, la gestión de comandos, el cerebro IA y el **Modo Secreto del Portal Demoníaco** con el avatar de Demoni y el tacógrafo de audio:
 
 <p align="center">
   <img src="docs/assets/demoni_1.png" width="280" alt="Pantalla Principal" />
@@ -81,4 +95,6 @@ Si la librería nativa no está compilada aún, **DemoniTalk Pro** cuenta con un
   <img src="docs/assets/demoni_5.png" width="280" alt="Modo Secreto" />
   <img src="docs/assets/demoni_6.png" width="280" alt="Tacógrafo de Audio" />
 </p>
+
+
 
