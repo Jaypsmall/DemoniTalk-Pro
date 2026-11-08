@@ -105,6 +105,7 @@
         <span class="nav-brand-text">
           <span class="de">De</span><span class="moni">moni</span><span class="talk">Talk Pro</span>
         </span>
+
       </a>
 
       <!-- NAVIGATION LINKS -->
@@ -449,55 +450,41 @@
     const appsDropdown = document.getElementById("appsDropdown");
 
     appsButton.addEventListener("click", function (event) {
-
         event.preventDefault();
         event.stopPropagation();
 
-        const isOpen = appsDropdown.classList.contains("open");
+        const isOpen = appsDropdown.classList.contains("show");
 
-        appsDropdown.classList.toggle("open", !isOpen);
+        appsDropdown.classList.toggle("show", !isOpen);
 
         appsButton.setAttribute(
           "aria-expanded",
           String(!isOpen)
         );
-
     });
 
 
     // CLOSE WHEN CLICKING OUTSIDE
-
     document.addEventListener("click", function (event) {
-
         if (!event.target.closest(".apps-menu")) {
-
-            appsDropdown.classList.remove("open");
-
+            appsDropdown.classList.remove("show");
             appsButton.setAttribute(
                 "aria-expanded",
                 "false"
             );
-
         }
-
       });
 
 
     // CLOSE WITH ESCAPE
-
       document.addEventListener("keydown", function (event) {
-
         if (event.key === "Escape") {
-
-            appsDropdown.classList.remove("open");
-
+            appsDropdown.classList.remove("show");
             appsButton.setAttribute(
                 "aria-expanded",
                 "false"
             );
-
         }
-
     });
 
 });
