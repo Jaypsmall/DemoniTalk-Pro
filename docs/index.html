@@ -399,14 +399,17 @@
   <script>
     document.addEventListener("DOMContentLoaded", function () {
 
-      // THEME
-      const body = document.body;
-      const themeButton = document.getElementById("themeButton");
-      const themeColor = document.querySelector('meta[name="theme-color"]');
+    // =========================
+    // THEME
+    // =========================
 
-      let lightMode = localStorage.getItem("demonitalk-theme") === "light";
+    const body = document.body;
+    const themeButton = document.getElementById("themeButton");
+    const themeColor = document.querySelector('meta[name="theme-color"]');
 
-      function applyTheme() {
+    let lightMode = localStorage.getItem("demonitalk-theme") === "light";
+
+    function applyTheme() {
         body.classList.toggle("light", lightMode);
 
         themeButton.textContent = lightMode ? "🌙" : "☀️";
@@ -438,43 +441,67 @@
       });
 
 
-      // DEMONI APPS DROPDOWN
-      const appsButton = document.getElementById("appsButton");
-      const appsDropdown = document.getElementById("appsDropdown");
+    // =========================
+    // DEMONI APPS DROPDOWN
+    // =========================
 
-      appsButton.addEventListener("click", function (event) {
+    const appsButton = document.getElementById("appsButton");
+    const appsDropdown = document.getElementById("appsDropdown");
+
+    appsButton.addEventListener("click", function (event) {
+
         event.preventDefault();
         event.stopPropagation();
 
-        const isOpen = appsDropdown.classList.toggle("show");
+        const isOpen = appsDropdown.classList.contains("open");
 
-        appsButton.setAttribute("aria-expanded", String(isOpen));
-      });
+        appsDropdown.classList.toggle("open", !isOpen);
+
+        appsButton.setAttribute(
+          "aria-expanded",
+          String(!isOpen)
+        );
+
+    });
 
 
-      // CLOSE WHEN CLICKING OUTSIDE
-      document.addEventListener("click", function (event) {
+    // CLOSE WHEN CLICKING OUTSIDE
+
+    document.addEventListener("click", function (event) {
 
         if (!event.target.closest(".apps-menu")) {
-          appsDropdown.classList.remove("show");
-          appsButton.setAttribute("aria-expanded", "false");
+
+            appsDropdown.classList.remove("open");
+
+            appsButton.setAttribute(
+                "aria-expanded",
+                "false"
+            );
+
         }
 
       });
 
 
-      // CLOSE WITH ESCAPE
+    // CLOSE WITH ESCAPE
+
       document.addEventListener("keydown", function (event) {
 
         if (event.key === "Escape") {
-          appsDropdown.classList.remove("show");
-          appsButton.setAttribute("aria-expanded", "false");
+
+            appsDropdown.classList.remove("open");
+
+            appsButton.setAttribute(
+                "aria-expanded",
+                "false"
+            );
+
         }
 
-      });
-
     });
-  </script>
+
+});
+</script>
 
 </body>
 </html>
