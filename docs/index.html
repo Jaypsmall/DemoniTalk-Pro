@@ -24,7 +24,7 @@
 
       <!-- BRAND -->
 
-      <a href="#" class="nav-brand">
+      <a href="https://jaypsmall.github.io/DemoniTalk-Pro/" class="nav-brand">
 
         <span class="nav-brand-icon">😈</span>
 
@@ -271,22 +271,67 @@
     const themeButton = document.getElementById("themeButton");
     const themeColor = document.querySelector('meta[name="theme-color"]');
 
+    // THEME
     let lightMode = localStorage.getItem("demonitalk-theme") === "light";
 
     function applyTheme() {
-      body.classList.toggle("light", lightMode);
-      themeButton.textContent = lightMode ? "🌙" : "☀️";
-      themeButton.setAttribute("aria-label", lightMode ? "Switch to dark theme" : "Switch to light theme");
-      themeButton.setAttribute("aria-pressed", String(lightMode));
-      themeColor.setAttribute("content", lightMode ? "#f3f3f3" : "#070707");
+        body.classList.toggle("light", lightMode);
+
+        themeButton.textContent = lightMode ? "🌙" : "☀️";
+
+        themeButton.setAttribute(
+            "aria-label",
+            lightMode ? "Switch to dark theme" : "Switch to light theme"
+        );
+
+        themeButton.setAttribute("aria-pressed", String(lightMode));
+
+        themeColor.setAttribute(
+            "content",
+            lightMode ? "#f3f3f3" : "#070707"
+        );
     }
 
     applyTheme();
 
     themeButton.addEventListener("click", () => {
-      lightMode = !lightMode;
-      localStorage.setItem("demonitalk-theme", lightMode ? "light" : "dark");
-      applyTheme();
+        lightMode = !lightMode;
+
+        localStorage.setItem(
+            "demonitalk-theme",
+            lightMode ? "light" : "dark"
+        );
+
+        applyTheme();
+    });
+
+
+    // DEMONI APPS DROPDOWN
+    const appsButton = document.getElementById("appsButton");
+    const appsDropdown = document.getElementById("appsDropdown");
+
+    appsButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+
+        const isOpen = appsDropdown.classList.toggle("show");
+
+        appsButton.setAttribute("aria-expanded", String(isOpen));
+    });
+
+    // Close when clicking outside
+    document.addEventListener("click", (event) => {
+        if (!event.target.closest(".apps-menu")) {
+            appsDropdown.classList.remove("show");
+            appsButton.setAttribute("aria-expanded", "false");
+        }
+    });
+
+    // Close with ESC
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+            appsDropdown.classList.remove("show");
+            appsButton.setAttribute("aria-expanded", "false");
+        }
     });
   </script>
 
