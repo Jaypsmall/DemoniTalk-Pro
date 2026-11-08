@@ -3,60 +3,126 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>DemoniTalk Pro | Demonic Edition</title>
+
   <meta name="description" content="DemoniTalk Pro - Advanced voice assistant and root automation engine for Android.">
   <meta name="theme-color" content="#070707">
+
   <meta property="og:title" content="DemoniTalk Pro | Demonic Edition">
   <meta property="og:description" content="Voice assistant and root automation engine for Android.">
   <meta property="og:type" content="website">
+
   <link rel="stylesheet" href="style.css">
-</head> 
+
+  <!-- DROPDOWN FIX -->
+  <style>
+    .apps-menu {
+      position: relative;
+    }
+
+    .apps-dropdown {
+      display: none !important;
+      position: absolute;
+      top: calc(100% + 10px);
+      right: 0;
+      z-index: 99999;
+      min-width: 240px;
+      flex-direction: column;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 8px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    }
+
+    .apps-dropdown.show {
+      display: flex !important;
+    }
+
+    .apps-dropdown .app-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      color: #f4f4f4;
+      text-decoration: none;
+      border-radius: 7px;
+      transition: background 0.2s ease;
+    }
+
+    .apps-dropdown .app-item:hover {
+      background: #222;
+    }
+
+    .apps-dropdown .app-icon {
+      font-size: 22px;
+    }
+
+    .apps-dropdown .app-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .apps-dropdown .app-info strong {
+      color: #fff;
+      font-size: 14px;
+    }
+
+    .apps-dropdown .app-info small {
+      color: #aaa;
+      font-size: 11px;
+    }
+
+    .apps-dropdown .current-app {
+      background: #202020;
+    }
+
+    .apps-button {
+      cursor: pointer;
+    }
+
+    @media (max-width: 768px) {
+      .apps-dropdown {
+        right: 0;
+        left: auto;
+      }
+    }
+  </style>
+</head>
+
 <body>
 
-  <!-- =========================
-       NAVIGATION
-  ========================== -->
-
+  <!-- NAVIGATION -->
   <nav class="navbar">
-
     <div class="nav-container">
 
-
       <!-- BRAND -->
-
       <a href="https://jaypsmall.github.io/DemoniTalk-Pro/" class="nav-brand">
-
         <span class="nav-brand-icon">😈</span>
 
         <span class="nav-brand-text">
           <span class="de">De</span><span class="moni">moni</span><span class="talk">Talk Pro</span>
         </span>
-
       </a>
 
-
       <!-- NAVIGATION LINKS -->
-
       <div class="nav-links">
-
 
         <a href="#interface" class="nav-link">
           INTERFACE
         </a>
 
-
         <a href="#features" class="nav-link">
           FEATURES
         </a>
-
 
         <a href="#requirements" class="nav-link">
           REQUIREMENTS
         </a>
 
-
         <!-- DEMONI APPS -->
-
         <div class="apps-menu">
 
           <button
@@ -71,72 +137,64 @@
 
           </button>
 
+          <div class="apps-dropdown" id="appsDropdown">
 
-          <div
-            class="apps-dropdown"
-            id="appsDropdown">
-        
             <a
-                href="https://jaypsmall.github.io/DemoniTalk/"
-                class="app-item current-app">
-        
-                <span class="app-icon">😈</span>
-        
-                <span class="app-info">
-                    <strong>DemoniTalk</strong>
-                    <small>Current app</small>
-                </span>
-        
+              href="https://jaypsmall.github.io/DemoniTalk/"
+              class="app-item">
+
+              <span class="app-icon">😈</span>
+
+              <span class="app-info">
+                <strong>DemoniTalk</strong>
+                <small>Standard edition</small>
+              </span>
             </a>
-        
+
             <a
-                href="https://jaypsmall.github.io/DemoniTalk-Pro/"
-                class="app-item">
-        
-                <span class="app-icon">👑</span>
-        
-                <span class="app-info">
-                    <strong>DemoniTalk Pro</strong>
-                    <small>Professional edition</small>
-                </span>
-        
+              href="https://jaypsmall.github.io/DemoniTalk-Pro/"
+              class="app-item current-app">
+
+              <span class="app-icon">👑</span>
+
+              <span class="app-info">
+                <strong>DemoniTalk Pro</strong>
+                <small>Current app</small>
+              </span>
             </a>
-        
+
             <a
-                href="https://jaypsmall.github.io/DemoniDraw/"
-                class="app-item">
-        
-                <span class="app-icon">🎨</span>
-        
-                <span class="app-info">
-                    <strong>DemoniDraw</strong>
-                    <small>Gesture automation</small>
-                </span>
-        
+              href="https://jaypsmall.github.io/DemoniDraw/"
+              class="app-item">
+
+              <span class="app-icon">🎨</span>
+
+              <span class="app-info">
+                <strong>DemoniDraw</strong>
+                <small>Gesture automation</small>
+              </span>
             </a>
-        
+
             <a
-                href="https://jaypsmall.github.io/DemoniWifi/"
-                class="app-item">
-        
-                <span class="app-icon">📡</span>
-        
-                <span class="app-info">
-                    <strong>DemoniWifi</strong>
-                    <small>WiFi utilities</small>
-                </span>
-        
+              href="https://jaypsmall.github.io/DemoniWifi/"
+              class="app-item">
+
+              <span class="app-icon">📡</span>
+
+              <span class="app-info">
+                <strong>DemoniWifi</strong>
+                <small>WiFi utilities</small>
+              </span>
             </a>
-        
-        </div>
-        
+
+          </div>
         </div>
 
         <!-- THEME -->
-
         <button
           id="themeButton"
           class="theme-button"
+          type="button"
           aria-label="Change theme"
           aria-pressed="false">
 
@@ -144,27 +202,47 @@
 
         </button>
 
-
       </div>
-
     </div>
-
   </nav>
-
-
 
   <!-- HERO -->
   <header>
     <div class="hero container">
+
       <div class="logo-icon">😈</div>
+
       <h1 class="logo-title">
         <span class="de">De</span><span class="moni">moni</span><span class="talk">Talk Pro</span>
       </h1>
+
       <div class="edition">DEMONIC EDITION · v2.0.6</div>
-      <p>Advanced voice assistant and automation engine with offline local conversation library and root access for Android.</p>
+
+      <p>
+        Advanced voice assistant and automation engine with offline local
+        conversation library and root access for Android.
+      </p>
+
       <div class="buttons">
-        <a class="button primary" href="https://github.com/Jaypsmall/DemoniTalk-Pro/releases/download/Rust/DemoniTalk_Pro_v2.0.666.apk" target="_blank" rel="noopener">↓ DOWNLOAD APK</a>
-        <a class="button secondary" href="https://github.com/Jaypsmall/DemoniTalk-Pro" target="_blank" rel="noopener">VIEW ON GITHUB</a>
+
+        <a
+          class="button primary"
+          href="https://github.com/Jaypsmall/DemoniTalk-Pro/releases/download/Rust/DemoniTalk_Pro_v2.0.666.apk"
+          target="_blank"
+          rel="noopener">
+
+          ↓ DOWNLOAD APK
+        </a>
+
+        <a
+          class="button secondary"
+          href="https://github.com/Jaypsmall/DemoniTalk-Pro"
+          target="_blank"
+          rel="noopener">
+
+          VIEW ON GITHUB
+        </a>
+
       </div>
     </div>
   </header>
@@ -172,14 +250,37 @@
   <!-- SCREENSHOTS -->
   <section id="interface">
     <div class="container">
-      <h2 class="section-title">📱 <span>Interface & Screenshots</span></h2>
+
+      <h2 class="section-title">
+        📱 <span>Interface & Screenshots</span>
+      </h2>
+
       <div class="screenshots">
-        <div class="screenshot-card"><img src="assets/demoni_1.png" alt="DemoniTalk Pro Screenshot 1"></div>
-        <div class="screenshot-card"><img src="assets/demoni_2.png" alt="DemoniTalk Pro Screenshot 2"></div>
-        <div class="screenshot-card"><img src="assets/demoni_3.png" alt="DemoniTalk Pro Screenshot 3"></div>
-        <div class="screenshot-card"><img src="assets/demoni_4.png" alt="DemoniTalk Pro Screenshot 4"></div>
-        <div class="screenshot-card"><img src="assets/demoni_5.png" alt="DemoniTalk Pro Screenshot 5"></div>
-        <div class="screenshot-card"><img src="assets/demoni_6.png" alt="DemoniTalk Pro Screenshot 6"></div>
+
+        <div class="screenshot-card">
+          <img src="assets/demoni_1.png" alt="DemoniTalk Pro Screenshot 1">
+        </div>
+
+        <div class="screenshot-card">
+          <img src="assets/demoni_2.png" alt="DemoniTalk Pro Screenshot 2">
+        </div>
+
+        <div class="screenshot-card">
+          <img src="assets/demoni_3.png" alt="DemoniTalk Pro Screenshot 3">
+        </div>
+
+        <div class="screenshot-card">
+          <img src="assets/demoni_4.png" alt="DemoniTalk Pro Screenshot 4">
+        </div>
+
+        <div class="screenshot-card">
+          <img src="assets/demoni_5.png" alt="DemoniTalk Pro Screenshot 5">
+        </div>
+
+        <div class="screenshot-card">
+          <img src="assets/demoni_6.png" alt="DemoniTalk Pro Screenshot 6">
+        </div>
+
       </div>
     </div>
   </section>
@@ -187,38 +288,49 @@
   <!-- FEATURES -->
   <section id="features">
     <div class="container">
-      <h2 class="section-title">⚡ <span>Features</span></h2>
+
+      <h2 class="section-title">
+        ⚡ <span>Features</span>
+      </h2>
+
       <div class="features">
+
         <div class="feature">
           <div class="feature-icon">🎙️</div>
           <h3>Voice Assistant & Secret Mode</h3>
           <p>Interactive voice control through a floating interface with offline local conversation library and vector avatars.</p>
         </div>
+
         <div class="feature">
           <div class="feature-icon">⚡</div>
           <h3>Root Automation</h3>
           <p>Execute custom triggers, console commands and system-level automation with root privileges.</p>
         </div>
+
         <div class="feature">
           <div class="feature-icon">👆</div>
           <h3>Touch Macros & Grids</h3>
           <p>Chain taps, swipes, number overlays and keyevents to create programmable interaction sequences.</p>
         </div>
+
         <div class="feature">
           <div class="feature-icon">🔄</div>
           <h3>Dual Speech Engines</h3>
           <p>Choose between Vosk offline speech recognition and Google Speech recognition dynamically.</p>
         </div>
+
         <div class="feature">
           <div class="feature-icon">🎨</div>
           <h3>Demonic Interface</h3>
           <p>Dark and light themes with dynamic visual feedback and animated audio tachometer.</p>
         </div>
+
         <div class="feature">
           <div class="feature-icon">📦</div>
           <h3>Import / Export</h3>
           <p>Manage command and macro configurations through local JSON backup files.</p>
         </div>
+
       </div>
     </div>
   </section>
@@ -226,112 +338,141 @@
   <!-- REQUIREMENTS -->
   <section id="requirements" class="requirements">
     <div class="container">
-      <h2 class="section-title">🛠️ <span>Requirements</span></h2>
+
+      <h2 class="section-title">
+        🛠️ <span>Requirements</span>
+      </h2>
+
       <div class="requirements-box">
+
         <div class="requirement">
           <div class="requirement-icon">📱</div>
           <strong>Android 8.0+</strong>
           <p>API 26 or newer</p>
         </div>
+
         <div class="requirement">
           <div class="requirement-icon">🔓</div>
           <strong>Root Access</strong>
           <p>Magisk or KernelSU</p>
         </div>
+
         <div class="requirement">
           <div class="requirement-icon">♿</div>
           <strong>Accessibility</strong>
           <p>Required for automation features</p>
         </div>
+
         <div class="requirement">
           <div class="requirement-icon">🪟</div>
           <strong>Overlay Permission</strong>
           <p>Required for the floating interface</p>
         </div>
+
       </div>
-      <p class="requirements-note">Root access gives DemoniTalk Pro permission to run system commands and automation actions. Install only on devices you control.</p>
+
+      <p class="requirements-note">
+        Root access gives DemoniTalk Pro permission to run system commands
+        and automation actions. Install only on devices you control.
+      </p>
+
     </div>
   </section>
 
   <!-- FOOTER -->
   <footer>
     <div class="container">
+
       <div class="footer-logo">
         <span class="de">De</span><span class="moni">moni</span><span class="talk">Talk Pro</span>
       </div>
+
       <div class="version">Demonic Edition · v2.0.6</div>
+
       <p>Built for Android automation and experimentation.</p>
       <p>© 2026 JAYLIZ</p>
+
     </div>
   </footer>
 
-  <!-- SCRIPT -->
+  <!-- JAVASCRIPT -->
   <script>
-    const body = document.body;
-    const themeButton = document.getElementById("themeButton");
-    const themeColor = document.querySelector('meta[name="theme-color"]');
+    document.addEventListener("DOMContentLoaded", function () {
 
-    // THEME
-    let lightMode = localStorage.getItem("demonitalk-theme") === "light";
+      // THEME
+      const body = document.body;
+      const themeButton = document.getElementById("themeButton");
+      const themeColor = document.querySelector('meta[name="theme-color"]');
 
-    function applyTheme() {
+      let lightMode = localStorage.getItem("demonitalk-theme") === "light";
+
+      function applyTheme() {
         body.classList.toggle("light", lightMode);
 
         themeButton.textContent = lightMode ? "🌙" : "☀️";
 
         themeButton.setAttribute(
-            "aria-label",
-            lightMode ? "Switch to dark theme" : "Switch to light theme"
+          "aria-label",
+          lightMode ? "Switch to dark theme" : "Switch to light theme"
         );
 
         themeButton.setAttribute("aria-pressed", String(lightMode));
 
         themeColor.setAttribute(
-            "content",
-            lightMode ? "#f3f3f3" : "#070707"
+          "content",
+          lightMode ? "#f3f3f3" : "#070707"
         );
-    }
+      }
 
-    applyTheme();
+      applyTheme();
 
-    themeButton.addEventListener("click", () => {
+      themeButton.addEventListener("click", function () {
         lightMode = !lightMode;
 
         localStorage.setItem(
-            "demonitalk-theme",
-            lightMode ? "light" : "dark"
+          "demonitalk-theme",
+          lightMode ? "light" : "dark"
         );
 
         applyTheme();
-    });
+      });
 
 
-    // DEMONI APPS DROPDOWN
-    const appsButton = document.getElementById("appsButton");
-    const appsDropdown = document.getElementById("appsDropdown");
+      // DEMONI APPS DROPDOWN
+      const appsButton = document.getElementById("appsButton");
+      const appsDropdown = document.getElementById("appsDropdown");
 
-    appsButton.addEventListener("click", (event) => {
+      appsButton.addEventListener("click", function (event) {
+        event.preventDefault();
         event.stopPropagation();
 
         const isOpen = appsDropdown.classList.toggle("show");
 
         appsButton.setAttribute("aria-expanded", String(isOpen));
-    });
+      });
 
-    // Close when clicking outside
-    document.addEventListener("click", (event) => {
+
+      // CLOSE WHEN CLICKING OUTSIDE
+      document.addEventListener("click", function (event) {
+
         if (!event.target.closest(".apps-menu")) {
-            appsDropdown.classList.remove("show");
-            appsButton.setAttribute("aria-expanded", "false");
+          appsDropdown.classList.remove("show");
+          appsButton.setAttribute("aria-expanded", "false");
         }
-    });
 
-    // Close with ESC
-    document.addEventListener("keydown", (event) => {
+      });
+
+
+      // CLOSE WITH ESCAPE
+      document.addEventListener("keydown", function (event) {
+
         if (event.key === "Escape") {
-            appsDropdown.classList.remove("show");
-            appsButton.setAttribute("aria-expanded", "false");
+          appsDropdown.classList.remove("show");
+          appsButton.setAttribute("aria-expanded", "false");
         }
+
+      });
+
     });
   </script>
 
