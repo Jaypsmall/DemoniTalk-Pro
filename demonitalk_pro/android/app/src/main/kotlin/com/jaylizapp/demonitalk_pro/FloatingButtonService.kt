@@ -472,7 +472,8 @@ class FloatingButtonService : Service() {
             } else {
                 withContext(Dispatchers.Main) {
                     if (!isServiceDestroyed) {
-                        ttsManager.speakText("No pude conectar con la IA en este momento.") {
+                        val fallbackResponse = ConversadorGordo.procesar(prompt)
+                        ttsManager.speakText(fallbackResponse) {
                             isWaitingForCommandAfterWake = false
                             if (!isServiceDestroyed && (isContinuousMode || isVigilanceMode)) {
                                 scheduleListeningRestart(500)

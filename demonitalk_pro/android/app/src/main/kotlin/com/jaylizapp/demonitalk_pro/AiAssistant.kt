@@ -21,14 +21,12 @@ class AiAssistant(context: Context, private val ttsManager: TtsManager?) {
     fun askFreeAi(prompt: String): String? {
         if (!isAiAvailable()) {
             Log.d("AiAssistant", "IA desactivada en preferencias.")
-            ttsManager?.speakText("La inteligencia artificial está desactivada en las preferencias.")
             return null
         }
 
         val finalPrompt = buildPrompt(prompt)
 
-        // Try POST with models: openai, deepseek, mistral, unity, grok
-        val models = listOf("openai", "deepseek", "mistral", "unity", "grok")
+        val models = listOf("openai", "mistral", "deepseek")
         for (model in models) {
             val resPost = fetchPollinationsPost(finalPrompt, model)
             if (!resPost.isNullOrEmpty()) {
@@ -37,9 +35,7 @@ class AiAssistant(context: Context, private val ttsManager: TtsManager?) {
             }
         }
 
-        // Fallback to GET across multiple models
-        val getModels = listOf("openai", "mistral", "deepseek")
-        for (model in getModels) {
+        for (model in models) {
             val resGet = fetchPollinationsGet(finalPrompt, model)
             if (!resGet.isNullOrEmpty()) {
                 Log.d("AiAssistant", "Respuesta obtenida via GET (model=$model): $resGet")
@@ -80,8 +76,8 @@ class AiAssistant(context: Context, private val ttsManager: TtsManager?) {
             connection.requestMethod = "POST"
             connection.setRequestProperty("Content-Type", "application/json")
             connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Mobile)")
-            connection.connectTimeout = 8000
-            connection.readTimeout = 10000
+            connection.connectTimeout = 3500
+            connection.readTimeout = 4000
             connection.doOutput = true
 
             val instructions = repository.getAiInstructions().trim()
@@ -118,13 +114,16 @@ class AiAssistant(context: Context, private val ttsManager: TtsManager?) {
                     // Si la respuesta viene en formato JSON, la parseamos
                     if (responseText.startsWith("{")) {
                         try {
-                            val map = com.google.gson.Gson().fromJson(responseText, Map::class.java)
-                            val choices = map["choices"] as? List<*>
-                            if (!choices.isNullOrEmpty()) {
-                                val choice = choices[0] as? Map<*, *>
-                                val message = choice?.get("message") as? Map<*, *>
-                                val content = (message?.get("content") as? String)?.trim()
-                                if (!content.isNullOrBlank()) return content
+                            val element = com.google.gson.JsonParser.parseString(responseText)
+                            if (element.isJsonObject) {
+                                val obj = element.asJsonObject
+                                val choices = obj.getAsJsonArray("choices")
+                                if (choices != null && choices.size() > 0) {
+                                    val first = choices.get(0).asJsonObject
+                                    val msg = first.getAsJsonObject("message")
+                                    val content = msg.getAsJsonPrimitive("content")?.asString?.trim()
+                                    if (!content.isNullOrBlank()) return content
+                                }
                             }
                         } catch (e: Exception) {
                             Log.e("AiAssistant", "Error parsing POST JSON ($model): ${e.message}")

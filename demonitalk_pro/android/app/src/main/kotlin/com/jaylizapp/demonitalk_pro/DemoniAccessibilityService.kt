@@ -230,6 +230,36 @@ class DemoniAccessibilityService : AccessibilityService() {
     fun performHome(): Boolean = performGlobalAction(GLOBAL_ACTION_HOME)
     fun performRecents(): Boolean = performGlobalAction(GLOBAL_ACTION_RECENTS)
 
+    fun readFocusedText(): String? {
+        val root = rootInActiveWindow ?: return null
+        val fullText = extractTextFromNode(root).trim()
+        try { root.recycle() } catch (_: Exception) {}
+        if (fullText.isBlank()) return null
+
+        val cleaned = fullText
+            .replace(Regex("(?i)\\b(skip to content|saltar al contenido|menu|inicio|search|buscar)\\b"), "")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+
+        return if (cleaned.isNotEmpty()) cleaned else fullText
+    }
+
+    private fun extractTextFromNode(node: android.view.accessibility.AccessibilityNodeInfo?): String {
+        if (node == null) return ""
+        val text = StringBuilder()
+        try {
+            if (!node.text.isNullOrEmpty()) {
+                text.append(node.text).append(" ")
+            }
+            for (i in 0 until node.childCount) {
+                val child = node.getChild(i)
+                text.append(extractTextFromNode(child))
+                child?.recycle()
+            }
+        } catch (_: Exception) {}
+        return text.toString()
+    }
+
     fun scrollUp(): Boolean {
         val root = rootInActiveWindow
         if (root != null && performScrollOnNode(root, scrollForward = false)) {

@@ -85,6 +85,18 @@ class AccessibilityController(
                 cleanAction == "hide_overlays" -> { service.hideOverlays(); true }
                 cleanAction == "scroll_up" -> service.scrollUp()
                 cleanAction == "scroll_down" -> service.scrollDown()
+                cleanAction == "read_aloud" -> {
+                    val textToRead = service.readFocusedText()
+                    if (!textToRead.isNullOrBlank()) {
+                        val tts = TtsManager(service)
+                        tts.speakText(textToRead)
+                        true
+                    } else {
+                        val tts = TtsManager(service)
+                        tts.speakText("No hay ningún texto en pantalla para leer.")
+                        false
+                    }
+                }
 
                 else -> {
                     Log.w(TAG, "Acción no soportada: $cleanAction")

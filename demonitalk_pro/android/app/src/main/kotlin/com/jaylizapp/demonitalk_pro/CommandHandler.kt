@@ -238,6 +238,11 @@ class CommandHandler(private val context: Context) {
                 return true
             }
 
+            "leelo", "leémelo", "leemelo", "lee esto", "leer texto", "lee" -> {
+                executeAsync("read_aloud")
+                return true
+            }
+
             "activa c4", "activa c 4", "activar c4", "activar c 4", "modo azul", "modo vigilancia", "activar vigilancia" -> {
                 internalListener?.invoke("internal_mode_blue")
                 return true

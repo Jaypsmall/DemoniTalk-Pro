@@ -110,12 +110,15 @@ class TtsManager(private val context: Context) {
             // 1. Eliminar etiquetas internas y comandos
             .replace(Regex("""\[CMD:.+?]""", RegexOption.IGNORE_CASE), "")
             .replace(Regex("""\[REMEMBER:.+?]""", RegexOption.IGNORE_CASE), "")
-            // 2. Eliminar emojis, símbolos, comillas curvas/normales y signos de puntuación que confunden al TTS
+            // 2. Eliminar formato Markdown (**negrita**, *cursiva*, # títulos)
+            .replace(Regex("""\*{1,3}(.*?)\*{1,3}"""), "$1")
+            .replace(Regex("""#{1,6}\s+"""), "")
+            // 3. Eliminar emojis, símbolos y comillas curvas/normales
             .replace(Regex("""[\uD83C-\uDBFF\uDC00-\uDFFF\u2600-\u27BF\u1F300-\u1F9FF]"""), "")
-            .replace(Regex("""[🚀😈🤖⚡🔥✨👍•\-*#_–—¿?¡!,;:.„“”‘’«»'"]"""), " ")
-            // 3. Eliminar palabras de puntuación dictadas por LLMs ("punto", "punto y raya", "coma")
-            .replace(Regex("""\b(punto y coma|punto y raya|punto final|coma|dos puntos|punto)\b""", RegexOption.IGNORE_CASE), "")
-            // 4. Normalizar espacios múltiples
+            .replace(Regex("""[🚀😈🤖⚡🔥✨👍•\-*#_–—„“”‘’«»'"]"""), " ")
+            // 4. Eliminar palabras de puntuación dictadas por LLMs
+            .replace(Regex("""\b(punto y coma|punto y raya|punto final|dos puntos)\b""", RegexOption.IGNORE_CASE), "")
+            // 5. Normalizar espacios múltiples
             .replace(Regex("""\s+"""), " ")
             .trim()
     }

@@ -236,6 +236,9 @@ class CommandRepository(private val context: Context) {
             VoiceCommand("bajar", "scroll_down"),
             VoiceCommand("scroll abajo", "scroll_down"),
             VoiceCommand("baja para abajo", "scroll_down"),
+            VoiceCommand("leelo", "read_aloud"),
+            VoiceCommand("leemelo", "read_aloud"),
+            VoiceCommand("lee esto", "read_aloud"),
             VoiceCommand("cerrar todo", "input keyevent 187 && sleep 1 && input tap 540 1800", true)
         )
     }
