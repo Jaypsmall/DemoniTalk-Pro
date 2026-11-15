@@ -324,6 +324,45 @@ body {
   color: var(--text);
 }
 
+/* Colores de marca unificados */
+.de { 
+  color: var(--accent-red); 
+  text-shadow: 0 0 10px rgba(255, 32, 32, 0.4);
+}
+
+.moni { 
+  color: var(--accent-yellow); 
+  text-shadow: 0 0 10px rgba(240, 202, 0, 0.3);
+}
+
+.talk { 
+  color: var(--text); 
+}
+
+/* Título apilado del Héroe */
+.hero-title-stack {
+  display: flex;
+  flex-direction: column;
+  font-size: clamp(42px, 5.5vw, 68px);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -1.5px;
+  margin-bottom: 20px;
+}
+
+.hero-title-stack .title-de {
+  color: var(--accent-red);
+  text-shadow: 0 0 25px rgba(255, 32, 32, 0.35);
+}
+
+.hero-title-stack .title-moni {
+  color: var(--accent-yellow);
+  text-shadow: 0 0 25px rgba(240, 202, 0, 0.3);
+}
+
+.hero-title-stack .title-talk {
+  color: var(--text);
+}
 .hero-subtitle {
   font-size: 18px;
   color: var(--text);
