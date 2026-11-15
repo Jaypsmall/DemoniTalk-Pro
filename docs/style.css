@@ -339,7 +339,6 @@ body {
   color: var(--text); 
 }
 
-/* Título apilado del Héroe */
 .hero-title-stack {
   display: flex;
   flex-direction: column;
@@ -363,6 +362,7 @@ body {
 .hero-title-stack .title-talk {
   color: var(--text);
 }
+
 .hero-subtitle {
   font-size: 18px;
   color: var(--text);
