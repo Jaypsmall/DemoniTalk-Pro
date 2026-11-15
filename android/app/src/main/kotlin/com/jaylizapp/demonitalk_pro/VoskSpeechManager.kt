@@ -29,8 +29,8 @@ class VoskSpeechManager(
         private const val TAG = "VoskSpeechManager"
         private const val MODEL_NAME = "model-es"
         private const val SAMPLE_RATE = 16000.0f
-        // Pause after a Vosk segment before submitting the full phrase.
-        private const val RESULT_SETTLE_MS = 1100L
+        // Subido a 2.8 segundos para dar margen a frases largas y encadenar comandos
+        private const val RESULT_SETTLE_MS = 2800L
     }
 
     private var voskModel: Model? = null
@@ -164,6 +164,12 @@ class VoskSpeechManager(
         if (!isListening || hasExecutedPartialInCurrentSession || hypothesis.isNullOrEmpty()) return
         val text = parseJsonText(hypothesis, "partial")
         if (text.isNotEmpty()) {
+            // CLAVE: Si ya teníamos un trozo guardado y el usuario sigue hablando,
+            // reiniciamos el temporizador para que NO corte a mitad de la frase.
+            if (pendingResultSegments.isNotEmpty()) {
+                scheduleResultCommit()
+            }
+
             if (onPartialSpeechResults?.invoke(text) == true) {
                 hasExecutedPartialInCurrentSession = true
                 isListening = false
@@ -178,11 +184,11 @@ class VoskSpeechManager(
             hasExecutedPartialInCurrentSession = false
             return
         }
-        // Keep the recorder active to collect a following speech segment.
+        // Mantiene el micro abierto para acumular el siguiente tramo de voz
         if (!hypothesis.isNullOrEmpty()) {
             val text = parseJsonText(hypothesis, "text")
             if (text.isNotEmpty()) {
-                Log.i(TAG, "Vosk reconoció: '$text'")
+                Log.i(TAG, "Vosk segmento acumulado: '$text'")
                 pendingResultSegments.add(text)
                 scheduleResultCommit()
                 return
