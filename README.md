@@ -87,13 +87,15 @@ Si la librería nativa no está compilada aún, **DemoniTalk Pro** cuenta con un
 
 > Un vistazo al diseño infernal de **DemoniTalk Pro**, la gestión de comandos, el cerebro IA y el **Modo Secreto del Portal Demoníaco** con el avatar de Demoni y el tacógrafo de audio:
 
-<p align="center">
-  <img src="docs/assets/demoni_1.png" width="280" alt="Pantalla Principal" />
-  <img src="docs/assets/demoni_2.png" width="280" alt="Cerebro IA" />
-  <img src="docs/assets/demoni_3.png" width="280" alt="Ajustes del Sistema" />
-  <img src="docs/assets/demoni_4.png" width="280" alt="Guía y Funciones" />
-  <img src="docs/assets/demoni_5.png" width="280" alt="Modo Secreto" />
-  <img src="docs/assets/demoni_6.png" width="280" alt="Tacógrafo de Audio" />
+<p align="center" width="100%">
+  <img src="docs/assets/demoni_1.png" width="40%" alt="Pantalla Principal" />
+  <img src="docs/assets/demoni_2.png" width="40%" alt="Cerebro IA" />
+<p align="center" width="100%">
+  <img src="docs/assets/demoni_3.png" width="40%" alt="Ajustes del Sistema" />
+  <img src="docs/assets/demoni_4.png" width="40%" alt="Guía y Funciones" />
+<p align="center" width="100%">
+  <img src="docs/assets/demoni_5.png" width="40%" alt="Modo Secreto" />
+  <img src="docs/assets/demoni_6.png" width="40%" alt="Tacógrafo de Audio" />
 </p>
 
 
