@@ -1,4 +1,7 @@
-# 😈 DemoniTalk Pro  ![Kotlin](https://img.shields.io/badge/Kotlin-181717?style=flat&logo=kotlin&logoColor=C81AEE) ![Flutter](https://img.shields.io/badge/Flutter-181717?style=flat&logo=flutter&logoColor=70B9EC) ![Rust](https://img.shields.io/badge/Rust-181717?style=flat&logo=rust&logoColor=FF6000)
+# 😈 DemoniTalk Pro  ![Kotlin](https://img.shields.io/badge/Kotlin-181717?style=icon&logo=kotlin&logoColor=C81AEE) ![Flutter](https://img.shields.io/badge/Flutter-181717?style=icon&logo=flutter&logoColor=70B9EC) ![Rust](https://img.shields.io/badge/Rust-181717?style=icon&logo=rust&logoColor=FF6000) <a href="https://kotlinlang.org" target="_blank"><img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/kotlin/kotlin-original.svg" height="30" alt="Kotlin" /></a> &nbsp;&nbsp; 
+  <a href="https://flutter.dev" target="_blank"><img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/flutter/flutter-original.svg" height="30" alt="Flutter" /></a> &nbsp;&nbsp;
+  <a href="https://www.rust-lang.org" target="_blank"><img src="https://rustacean.net/assets/rustacean-flat-happy.svg" height="30" alt="Rust" /></a>
+</p>
 
 <a href="https://github.com/Jaypsmall/DemoniTalk-Pro/releases/download/Rust/DemoniTalk_Pro_v2.0.2.apk">
 <img src="https://img.shields.io/badge/DOWNLOAD_DEMONITALK_PRO_v2.0.2_APK-181717?style=flat&logo=android&logoColor=green" alt="Download Rust Release">
